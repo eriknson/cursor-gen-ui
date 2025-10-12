@@ -1,0 +1,256 @@
+{
+  "description": "Test examples for multi-dataset chart functionality",
+  "examples": [
+    {
+      "name": "Multi-Line Chart - Stock Comparison",
+      "query": "Compare Tesla and Apple stock prices over the last week",
+      "expected_response": {
+        "componentType": "line-chart",
+        "config": {
+          "variant": "smooth",
+          "showPoints": true,
+          "showLegend": true,
+          "theme": "default"
+        },
+        "data": {
+          "labels": ["Day 1", "Day 2", "Day 3", "Day 4", "Day 5", "Day 6", "Day 7"],
+          "datasets": [
+            {
+              "name": "Tesla (TSLA)",
+              "values": [248, 250, 249, 252, 255, 254, 256],
+              "color": "#ef4444"
+            },
+            {
+              "name": "Apple (AAPL)",
+              "values": [178, 180, 179, 181, 182, 183, 184],
+              "color": "#6366f1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Grouped Bar Chart - Year-over-Year Comparison",
+      "query": "Show Q1-Q4 sales for 2023 and 2024",
+      "expected_response": {
+        "componentType": "bar-chart",
+        "config": {
+          "variant": "vertical",
+          "grouping": "grouped",
+          "showLegend": true,
+          "theme": "default"
+        },
+        "data": {
+          "labels": ["Q1", "Q2", "Q3", "Q4"],
+          "datasets": [
+            {
+              "name": "2023",
+              "values": [125000, 142000, 138000, 165000],
+              "color": "#6366f1"
+            },
+            {
+              "name": "2024",
+              "values": [138000, 156000, 152000, 182000],
+              "color": "#10b981"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Stacked Bar Chart - Regional Sales",
+      "query": "Show regional sales stacked by product category",
+      "expected_response": {
+        "componentType": "bar-chart",
+        "config": {
+          "variant": "vertical",
+          "grouping": "stacked",
+          "showLegend": true
+        },
+        "data": {
+          "labels": ["North", "South", "East", "West"],
+          "datasets": [
+            {
+              "name": "Electronics",
+              "values": [120, 110, 130, 125]
+            },
+            {
+              "name": "Clothing",
+              "values": [80, 85, 90, 95]
+            },
+            {
+              "name": "Food",
+              "values": [60, 65, 70, 75]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Stacked Area Chart - Traffic Sources",
+      "query": "Show website traffic breakdown by source over time",
+      "expected_response": {
+        "componentType": "area-chart",
+        "config": {
+          "grouping": "stacked",
+          "showLegend": true,
+          "theme": "default"
+        },
+        "data": {
+          "labels": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+          "datasets": [
+            {
+              "name": "Organic Search",
+              "values": [1200, 1350, 1280, 1420, 1510, 1580],
+              "color": "#10b981"
+            },
+            {
+              "name": "Social Media",
+              "values": [800, 850, 920, 980, 1050, 1120],
+              "color": "#6366f1"
+            },
+            {
+              "name": "Direct",
+              "values": [500, 520, 550, 580, 610, 650],
+              "color": "#f59e0b"
+            },
+            {
+              "name": "Referral",
+              "values": [300, 320, 340, 360, 380, 400],
+              "color": "#8b5cf6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Multi-Line Chart - Temperature & Humidity",
+      "query": "Show temperature and humidity trends over the week",
+      "expected_response": {
+        "componentType": "line-chart",
+        "config": {
+          "variant": "smooth",
+          "showPoints": true,
+          "showLegend": true
+        },
+        "data": {
+          "labels": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+          "datasets": [
+            {
+              "name": "Temperature (°F)",
+              "values": [72, 75, 73, 76, 78, 80, 77],
+              "color": "#ef4444"
+            },
+            {
+              "name": "Humidity (%)",
+              "values": [65, 62, 68, 60, 58, 55, 59],
+              "color": "#3b82f6"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Backward Compatibility - Single Dataset Line Chart",
+      "query": "Show Tesla stock price over the last week",
+      "expected_response": {
+        "componentType": "line-chart",
+        "config": {
+          "variant": "smooth",
+          "showPoints": true,
+          "theme": "default"
+        },
+        "data": [
+          { "label": "Oct 4", "value": 248.5 },
+          { "label": "Oct 5", "value": 250.2 },
+          { "label": "Oct 6", "value": 249.8 },
+          { "label": "Oct 7", "value": 252.1 },
+          { "label": "Oct 8", "value": 255.3 },
+          { "label": "Oct 9", "value": 254.9 },
+          { "label": "Oct 10", "value": 256.4 }
+        ]
+      }
+    },
+    {
+      "name": "Backward Compatibility - Single Dataset Bar Chart",
+      "query": "Show top 5 products by sales",
+      "expected_response": {
+        "componentType": "bar-chart",
+        "config": {
+          "variant": "vertical",
+          "theme": "vibrant"
+        },
+        "data": [
+          { "label": "Product A", "value": 45000 },
+          { "label": "Product B", "value": 38000 },
+          { "label": "Product C", "value": 32000 },
+          { "label": "Product D", "value": 28000 },
+          { "label": "Product E", "value": 25000 }
+        ]
+      }
+    }
+  ],
+  "test_instructions": {
+    "manual_testing": [
+      "1. Start the development server: npm run dev",
+      "2. Open the app in your browser",
+      "3. Enter each query from the examples above",
+      "4. Verify the correct chart type is rendered",
+      "5. For multi-dataset charts, verify:",
+      "   - Legend is displayed",
+      "   - Multiple series are visible",
+      "   - Colors are distinct",
+      "   - Data is accurate",
+      "6. For backward compatibility tests, verify:",
+      "   - Single dataset renders correctly",
+      "   - No legend shown for single dataset",
+      "   - Same appearance as before the update"
+    ],
+    "automated_testing": [
+      "TODO: Add unit tests for:",
+      "- validateMultiDatasetFormat()",
+      "- validateSingleDatasetFormat()",
+      "- Chart component format detection",
+      "- Backward compatibility"
+    ]
+  },
+  "edge_cases": [
+    {
+      "name": "Empty Dataset",
+      "data": { "labels": [], "datasets": [] },
+      "expected": "Component should return null or show empty state"
+    },
+    {
+      "name": "Mismatched Lengths",
+      "data": {
+        "labels": ["A", "B", "C"],
+        "datasets": [{ "name": "Series 1", "values": [1, 2] }]
+      },
+      "expected": "Validation should fail"
+    },
+    {
+      "name": "Single Dataset in Multi Format",
+      "data": {
+        "labels": ["A", "B", "C"],
+        "datasets": [{ "name": "Only Series", "values": [1, 2, 3] }]
+      },
+      "expected": "Should render without legend (or with legend if configured)"
+    },
+    {
+      "name": "Many Datasets (>5)",
+      "data": {
+        "labels": ["A", "B"],
+        "datasets": [
+          { "name": "S1", "values": [1, 2] },
+          { "name": "S2", "values": [3, 4] },
+          { "name": "S3", "values": [5, 6] },
+          { "name": "S4", "values": [7, 8] },
+          { "name": "S5", "values": [9, 10] },
+          { "name": "S6", "values": [11, 12] }
+        ]
+      },
+      "expected": "Should render with color cycling through defaultColors array"
+    }
+  ]
+}
+
