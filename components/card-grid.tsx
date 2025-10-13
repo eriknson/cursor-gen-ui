@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 interface CardItem {
   title: string;
@@ -21,34 +22,37 @@ export const CardGrid = ({ items }: { items: CardItem[] }) => {
         {items.map((item, index) => (
           <motion.div
             key={index}
-            className="bg-zinc-100 dark:bg-zinc-800 p-3 rounded-lg flex flex-col gap-2"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
           >
-            {item.icon && (
-              <div className="text-2xl mb-1">{item.icon}</div>
-            )}
-            <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-              {item.title}
-            </div>
-            {item.description && (
-              <div className="text-xs text-zinc-600 dark:text-zinc-400">
-                {item.description}
-              </div>
-            )}
-            {item.details && item.details.length > 0 && (
-              <div className="flex flex-col gap-1 mt-1">
-                {item.details.map((detail, i) => (
-                  <div
-                    key={i}
-                    className="text-xs text-zinc-500 dark:text-zinc-500"
-                  >
-                    {detail}
+            <Card>
+              <CardContent className="p-3">
+                {item.icon && (
+                  <div className="text-2xl mb-1">{item.icon}</div>
+                )}
+                <CardTitle className="text-sm font-semibold text-foreground">
+                  {item.title}
+                </CardTitle>
+                {item.description && (
+                  <CardDescription className="text-xs text-muted-foreground">
+                    {item.description}
+                  </CardDescription>
+                )}
+                {item.details && item.details.length > 0 && (
+                  <div className="flex flex-col gap-1 mt-1">
+                    {item.details.map((detail, i) => (
+                      <div
+                        key={i}
+                        className="text-xs text-muted-foreground"
+                      >
+                        {detail}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
+                )}
+              </CardContent>
+            </Card>
           </motion.div>
         ))}
       </div>

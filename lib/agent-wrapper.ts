@@ -88,6 +88,7 @@ When responding to user queries:
          ]
        }
    - config: {
+       title: string, // Chart title (optional, recommended for context)
        colors: ["#color1", "#color2"], // Line colors (optional if specified per-dataset)
        variant: "smooth" | "linear" | "stepped",
        showPoints: boolean,
@@ -110,6 +111,7 @@ When responding to user queries:
          ]
        }
    - config: {
+       title: string, // Chart title (optional, recommended for context)
        colors: ["#color"], // Bar colors (optional if specified per-dataset)
        variant: "vertical" | "horizontal",
        grouping: "grouped" | "stacked", // For multi-dataset only
@@ -123,6 +125,7 @@ When responding to user queries:
 3. **pie-chart**: For proportions, distributions, percentages
    - data: Array of {label: string, value: number}
    - config: {
+       title: string, // Chart title (optional, recommended for context)
        colors: ["#c1", "#c2", "#c3"],
        variant: "pie" | "donut",
        showPercentages: boolean,
@@ -142,6 +145,7 @@ When responding to user queries:
          ]
        }
    - config: {
+       title: string, // Chart title (optional, recommended for context)
        colors: ["#color"],
        variant: "filled" | "stacked",
        grouping: "stacked", // For multi-dataset
@@ -225,14 +229,15 @@ When responding to user queries:
      }
    - Use for: Feature lists, benefits, steps, bullet points
 
-10. **media-grid**: For images, videos, galleries
-    - data: Array of {url: string, caption: string, title?: string}
+10. **media-grid** (or **images**): For images, videos, galleries
+    - data: Array of {url: string, caption: string, title?: string, alt?: string}
     - config: {
-        columns: number,
+        columns: number, // Grid columns (1-4)
         variant: "grid" | "masonry",
-        size: "sm" | "md" | "lg"
+        size: "sm" | "md" | "lg" // Aspect ratio
       }
     - Use for: Image galleries, photo collections, visual content
+    - Note: Both "media-grid" and "images" work for image galleries
 
 ### SPECIALIZED COMPONENTS
 
@@ -331,19 +336,24 @@ When responding to user queries:
 
 ## When to Use web_search for Current Data
 
-**Use web_search tool for current/real-time information:**
+**Use web_search tool ONLY for current/real-time information:**
 - Stock prices: web_search "TSLA stock price today"
 - Weather: web_search "Tokyo weather current"
 - Crypto prices: web_search "Bitcoin price now"
 - Exchange rates: web_search "USD to EUR exchange rate"
-- Any current news, sports scores, or timely data
+- Current news, sports scores, or timely data
 
 **DO NOT use web_search for:**
+- Historical data over long periods (use your knowledge)
 - Mathematical calculations (just compute them)
 - Code generation (generate directly)
 - Historical facts that don't change (use your knowledge)
 - Recipe requests (use your knowledge)
 - How-to explanations (use your knowledge)
+- GDP comparisons over decades (use your knowledge)
+- Long-term trends and historical analysis (use your knowledge)
+
+**IMPORTANT**: For historical comparisons like "GDP over 100 years", use your knowledge base instead of web search to avoid resource exhaustion.
 
 ## Component Selection Strategy
 
@@ -414,6 +424,7 @@ Streaming:
 Final: {
   "componentType": "line-chart",
   "config": {
+    "title": "Tesla vs Apple Stock Comparison",
     "variant": "smooth",
     "showPoints": true,
     "showGrid": true,
@@ -443,6 +454,7 @@ User: "Show Q1-Q4 revenue for 2023 vs 2024"
 Response: {
   "componentType": "bar-chart",
   "config": {
+    "title": "Quarterly Revenue: 2023 vs 2024",
     "variant": "vertical",
     "grouping": "grouped",
     "showLegend": true,
@@ -670,14 +682,19 @@ export async function queryAgentStream(
   model?: string
 ): Promise<void> {
   try {
-    console.log(`\n🚀 Processing query: "${userMessage}"\n`);
-
     const seenSteps = new Set<string>();
 
     // Use the callback version to get real-time events
     let textBuffer = "";
 
-    const result = await cursor.generateStreamWithCallback(
+    // Add timeout wrapper to prevent resource exhaustion
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error("Request timed out - please try a simpler query"));
+      }, 2 * 60 * 1000); // 2 minute timeout
+    });
+
+    const resultPromise = cursor.generateStreamWithCallback(
       {
         prompt: userMessage,
         systemPrompt: SYSTEM_PROMPT,
@@ -691,7 +708,6 @@ export async function queryAgentStream(
         if (step && !seenSteps.has(step)) {
           seenSteps.add(step);
           onUpdate({ type: "progress", step });
-          console.log(`📍 Progress: ${step}`);
         }
 
         // Parse chunks from assistant text for progressive rendering
@@ -705,7 +721,6 @@ export async function queryAgentStream(
               try {
                 const json = JSON.parse(line.slice(line.indexOf('{')));
                 onUpdate({ type: "partial", chunk: json });
-                console.log(`🔄 Chunk: stage=${json.stage}`);
               } catch (e) {
                 // Ignore malformed JSON
               }
@@ -715,15 +730,28 @@ export async function queryAgentStream(
       }
     );
 
+    const result = await Promise.race([resultPromise, timeoutPromise]);
+
     if (!result.success) {
       console.error("❌ Cursor agent failed:", result.error);
       console.error("Full result:", JSON.stringify(result, null, 2));
+      
+      // Handle specific error types
+      let errorMessage = "sorry, i encountered an error processing your request.";
+      if (result.error?.includes("resource_exhausted") || result.error?.includes("ConnectError")) {
+        errorMessage = "sorry, the request was too complex and hit resource limits. please try a simpler query or break it down into smaller parts.";
+      } else if (result.error?.includes("timed out")) {
+        errorMessage = "sorry, the request timed out. please try a simpler query.";
+      } else {
+        errorMessage = `sorry, i encountered an error processing your request. error: ${result.error || 'unknown'}`;
+      }
+      
       onUpdate({
         type: "complete",
         response: {
           componentType: "text",
           data: null,
-          textResponse: `sorry, i encountered an error processing your request. error: ${result.error || 'unknown'}`,
+          textResponse: errorMessage,
         },
       });
       return;
@@ -731,8 +759,11 @@ export async function queryAgentStream(
 
     // Parse and send final response
     const response = await parseFinalResponse(result.finalText);
+    
+    // Always show "Creating component" as the final step
+    onUpdate({ type: "progress", step: "Creating component" });
+    
     onUpdate({ type: "complete", response });
-    console.log(`✅ Agent response: type=${response.componentType}\n`);
   } catch (error) {
     console.error("❌ Unexpected error in queryAgentStream:", error);
     onUpdate({
@@ -751,9 +782,14 @@ export async function queryAgent(
   model?: string
 ): Promise<AgentResponse> {
   try {
-    console.log(`\n🚀 Processing query: "${userMessage}"\n`);
+    // Add timeout wrapper to prevent resource exhaustion
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error("Request timed out - please try a simpler query"));
+      }, 2 * 60 * 1000); // 2 minute timeout
+    });
 
-    const result = await cursor.generateStream({
+    const resultPromise = cursor.generateStream({
       prompt: userMessage,
       systemPrompt: SYSTEM_PROMPT,
       model: model || process.env.CURSOR_MODEL || "cheetah",
@@ -761,13 +797,26 @@ export async function queryAgent(
       debug: false,
     });
 
+    const result = await Promise.race([resultPromise, timeoutPromise]);
+
     if (!result.success) {
       console.error("❌ Cursor agent failed:", result.error);
       console.error("Full result:", JSON.stringify(result, null, 2));
+      
+      // Handle specific error types
+      let errorMessage = "sorry, i encountered an error processing your request.";
+      if (result.error?.includes("resource_exhausted") || result.error?.includes("ConnectError")) {
+        errorMessage = "sorry, the request was too complex and hit resource limits. please try a simpler query or break it down into smaller parts.";
+      } else if (result.error?.includes("timed out")) {
+        errorMessage = "sorry, the request timed out. please try a simpler query.";
+      } else {
+        errorMessage = `sorry, i encountered an error processing your request. error: ${result.error || 'unknown'}`;
+      }
+      
       return {
         componentType: "text",
         data: null,
-        textResponse: `sorry, i encountered an error processing your request. error: ${result.error || 'unknown'}`,
+        textResponse: errorMessage,
       };
     }
 
@@ -787,8 +836,6 @@ export async function queryAgent(
     const response = await parseFinalResponse(result.finalText);
     response.progressSteps = progressSteps;
 
-    console.log(`✅ Agent response: type=${response.componentType}\n`);
-    console.log(`📊 Progress steps: ${progressSteps.length} captured\n`);
     return response;
   } catch (error) {
     console.error("❌ Unexpected error in queryAgent:", error);
@@ -812,7 +859,6 @@ async function parseFinalResponse(finalText: string): Promise<AgentResponse> {
     if (!hasChunkMarkers && !hasComponentType) {
       console.warn("⚠️ Model did not follow streaming protocol - returned plain text instead");
       console.warn("⚠️ This typically happens with certain models (e.g., sonnet-4.5)");
-      console.log("Raw output (first 300 chars):", finalText.substring(0, 300));
     }
     
     // Remove any conversational text and extract JSON
@@ -912,8 +958,6 @@ async function parseFinalResponse(finalText: string): Promise<AgentResponse> {
   } catch (parseError) {
     console.error("❌ Failed to parse JSON response - model did not follow protocol");
     console.error("Parse error:", parseError);
-    console.log("Raw output (first 500 chars):", finalText.substring(0, 500));
-    console.log("Raw output (last 200 chars):", finalText.substring(Math.max(0, finalText.length - 200)));
 
     // Check if this looks like a conversational response
     const looksLikeConversation = finalText.toLowerCase().includes("i'll create") || 

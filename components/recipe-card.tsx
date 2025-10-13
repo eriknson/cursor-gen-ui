@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 import { ComponentConfig } from "@/lib/agent-wrapper";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface RecipeData {
   title: string;
@@ -35,7 +37,7 @@ export const RecipeCard = ({ data, config = {} }: RecipeCardProps) => {
       return "text-yellow-600 dark:text-yellow-400";
     if (lower.includes("hard") || lower.includes("difficult"))
       return "text-red-600 dark:text-red-400";
-    return "text-zinc-600 dark:text-zinc-400";
+    return "text-muted-foreground";
   };
 
   return (
@@ -45,10 +47,10 @@ export const RecipeCard = ({ data, config = {} }: RecipeCardProps) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
+      <Card className="overflow-hidden">
         {/* Image */}
         {data.image && (
-          <div className="w-full h-48 bg-zinc-200 dark:bg-zinc-700">
+          <div className="w-full h-48 bg-muted">
             <img
               src={data.image}
               alt={data.title}
@@ -58,70 +60,69 @@ export const RecipeCard = ({ data, config = {} }: RecipeCardProps) => {
         )}
 
         {/* Header */}
-        <div className="p-6 pb-4">
-          <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-3">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-2xl font-bold text-foreground mb-3">
             {data.title}
-          </h3>
+          </CardTitle>
 
           {/* Meta Info */}
           {(showTimings || showDifficulty) && (
             <div className="flex flex-wrap gap-3 text-sm">
               {showTimings && data.prepTime && (
-                <div className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400">
+                <Badge variant="outline" className="gap-1.5">
                   <span className="text-base">⏱️</span>
                   <span>Prep: {data.prepTime}</span>
-                </div>
+                </Badge>
               )}
               {showTimings && data.cookTime && (
-                <div className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400">
+                <Badge variant="outline" className="gap-1.5">
                   <span className="text-base">🔥</span>
                   <span>Cook: {data.cookTime}</span>
-                </div>
+                </Badge>
               )}
               {data.servings && (
-                <div className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400">
+                <Badge variant="outline" className="gap-1.5">
                   <span className="text-base">🍽️</span>
                   <span>{data.servings} servings</span>
-                </div>
+                </Badge>
               )}
               {showDifficulty && data.difficulty && (
-                <div
-                  className={`flex items-center gap-1.5 font-medium ${getDifficultyColor(data.difficulty)}`}
+                <Badge 
+                  variant="secondary" 
+                  className={`gap-1.5 font-medium ${getDifficultyColor(data.difficulty)}`}
                 >
                   <span className="text-base">📊</span>
                   <span>{data.difficulty}</span>
-                </div>
+                </Badge>
               )}
             </div>
           )}
-        </div>
+        </CardHeader>
 
         {/* Ingredients */}
-        <div className="px-6 py-4 bg-zinc-50 dark:bg-zinc-800/50">
-          <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide mb-3">
+        <CardContent className="px-6 py-4 bg-muted/50">
+          <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-3">
             Ingredients
           </h4>
           <div className="space-y-2">
             {data.ingredients.map((ingredient, index) => (
               <motion.div
                 key={index}
-                className="flex items-start gap-2 text-sm text-zinc-700 dark:text-zinc-300"
+                className="flex items-start gap-2 text-sm text-muted-foreground"
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.03 }}
               >
-                <span className="text-blue-500 dark:text-blue-400 mt-0.5">
-                  •
-                </span>
+                <span className="text-primary mt-0.5">•</span>
                 <span>{ingredient}</span>
               </motion.div>
             ))}
           </div>
-        </div>
+        </CardContent>
 
         {/* Steps */}
-        <div className="px-6 py-4">
-          <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide mb-3">
+        <CardContent className="px-6 py-4">
+          <h4 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-3">
             Instructions
           </h4>
           <div className="space-y-3">
@@ -133,17 +134,17 @@ export const RecipeCard = ({ data, config = {} }: RecipeCardProps) => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 + index * 0.05 }}
               >
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500 dark:bg-blue-400 text-white text-xs font-bold flex items-center justify-center">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
                   {index + 1}
                 </div>
-                <div className="flex-1 text-sm text-zinc-700 dark:text-zinc-300 pt-0.5">
+                <div className="flex-1 text-sm text-muted-foreground pt-0.5">
                   {step}
                 </div>
               </motion.div>
             ))}
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </motion.div>
   );
 };

@@ -1,11 +1,29 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Chart as ChartJS, ArcElement, Tooltip } from "chart.js";
-import { Doughnut } from "react-chartjs-2";
+import {
+  RadialBarChart,
+  RadialBar,
+} from "recharts";
 import { ComponentConfig } from "@/lib/agent-wrapper";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  ChartContainer,
+  type ChartConfig,
+} from "@/components/ui/chart";
+import NumberFlow from "@number-flow/react";
 
-ChartJS.register(ArcElement, Tooltip);
+// Monochrome color palette
+const MONOCHROME_COLORS = [
+  "hsl(var(--foreground))",        // Primary black/dark
+  "hsl(var(--muted-foreground))",  // Secondary grey
+  "hsl(var(--muted))",             // Light grey
+  "hsl(var(--border))",            // Border grey
+  "hsl(var(--secondary))",         // Secondary background
+  "hsl(var(--accent))",            // Accent grey
+  "hsl(var(--card-foreground))",    // Card text
+  "hsl(var(--popover-foreground))", // Popover text
+];
 
 interface GaugeData {
   value: number;
@@ -23,7 +41,7 @@ export const GaugeChart = ({ data, config = {} }: GaugeChartProps) => {
     return null;
   }
 
-  const color = config.color || "#6366f1";
+  const color = config.color || MONOCHROME_COLORS[0];
   const variant = config.variant || "semi";
   const showValue = config.showValue ?? true;
 
@@ -42,32 +60,29 @@ export const GaugeChart = ({ data, config = {} }: GaugeChartProps) => {
     }
   }
 
-  const chartData = {
-    datasets: [
-      {
-        data: variant === "semi" ? [data.value, remaining, data.max] : [data.value, remaining],
-        backgroundColor:
-          variant === "semi"
-            ? [gaugeColor, "#e5e7eb", "transparent"]
-            : [gaugeColor, "#e5e7eb"],
-        borderWidth: 0,
-        circumference: variant === "semi" ? 180 : 360,
-        rotation: variant === "semi" ? -90 : 0,
-      },
-    ],
-  };
+  // Prepare data for RadialBarChart
+  const chartData = [
+    {
+      name: "value",
+      value: data.value,
+      fill: gaugeColor,
+    },
+    {
+      name: "remaining",
+      value: remaining,
+      fill: "hsl(var(--muted))",
+    },
+  ];
 
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: "75%",
-    plugins: {
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        enabled: false,
-      },
+  // Create chart config for shadcn
+  const chartConfig: ChartConfig = {
+    value: {
+      label: data.label,
+      color: gaugeColor,
+    },
+    remaining: {
+      label: "Remaining",
+      color: "hsl(var(--muted))",
     },
   };
 
@@ -78,41 +93,54 @@ export const GaugeChart = ({ data, config = {} }: GaugeChartProps) => {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800">
-        <div className="relative">
-          <div
-            className={variant === "semi" ? "h-[180px]" : "h-[240px]"}
-          >
-            <Doughnut data={chartData} options={options} />
-          </div>
-
-          {/* Center Value */}
-          {showValue && (
-            <div
-              className={`absolute inset-0 flex flex-col items-center ${
-                variant === "semi" ? "justify-end pb-8" : "justify-center"
-              }`}
-            >
-              <div className="text-4xl font-bold text-zinc-900 dark:text-zinc-100">
-                {data.value}
-              </div>
-              <div className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                out of {data.max}
-              </div>
-              <div className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
-                {percentage.toFixed(1)}%
-              </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>{data.label}</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4">
+          <div className="relative">
+            <div className="w-full h-[240px]">
+              <ChartContainer config={chartConfig} className="h-full w-full">
+                <RadialBarChart
+                  cx="50%"
+                  cy={variant === "semi" ? "80%" : "50%"}
+                  innerRadius={variant === "semi" ? "20%" : "30%"}
+                  outerRadius={variant === "semi" ? "70%" : "80%"}
+                  barSize={variant === "semi" ? 20 : 15}
+                  data={chartData}
+                  startAngle={variant === "semi" ? 180 : 0}
+                  endAngle={variant === "semi" ? 0 : 360}
+                >
+                  <RadialBar
+                    dataKey="value"
+                    cornerRadius={10}
+                    fill={gaugeColor}
+                  />
+                </RadialBarChart>
+              </ChartContainer>
             </div>
-          )}
-        </div>
 
-        {/* Label */}
-        <div className="text-center mt-4">
-          <div className="text-base font-medium text-zinc-700 dark:text-zinc-300">
-            {data.label}
+            {/* Center Value */}
+            {showValue && (
+              <div
+                className={`absolute inset-0 flex flex-col items-center ${
+                  variant === "semi" ? "justify-end pb-8" : "justify-center"
+                }`}
+              >
+                <div className="text-4xl font-bold text-foreground">
+                  <NumberFlow value={data.value} />
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  out of {data.max}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  <NumberFlow value={percentage} format={{ maximumFractionDigits: 1 }} suffix="%" />
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </motion.div>
   );
 };

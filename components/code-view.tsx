@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 import { Markdown } from "./markdown";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const CodeView = ({
   language,
@@ -23,16 +25,20 @@ export const CodeView = ({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      <div className="bg-zinc-100 dark:bg-zinc-800 rounded-lg overflow-hidden">
-        <div className="px-3 py-2 bg-zinc-200 dark:bg-zinc-700 border-b border-zinc-300 dark:border-zinc-600">
-          <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-xs font-semibold text-muted-foreground">
             {language}
-          </span>
-        </div>
-        <div className="p-3 overflow-x-auto">
-          <Markdown>{markdownCode}</Markdown>
-        </div>
-      </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <ScrollArea className="h-[300px]">
+            <div className="p-3">
+              <Markdown>{markdownCode}</Markdown>
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
     </motion.div>
   );
 };

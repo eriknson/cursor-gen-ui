@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 import { ComponentConfig } from "@/lib/agent-wrapper";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface TimelineItem {
   title: string;
@@ -31,11 +33,11 @@ export const TimelineView = ({ data, config = {} }: TimelineViewProps) => {
       case "completed":
         return "bg-green-500 dark:bg-green-400";
       case "active":
-        return "bg-blue-500 dark:bg-blue-400";
+        return "bg-primary";
       case "upcoming":
-        return "bg-zinc-300 dark:bg-zinc-600";
+        return "bg-muted";
       default:
-        return "bg-zinc-400 dark:bg-zinc-500";
+        return "bg-muted";
     }
   };
 
@@ -44,11 +46,24 @@ export const TimelineView = ({ data, config = {} }: TimelineViewProps) => {
       case "completed":
         return "ring-green-200 dark:ring-green-900";
       case "active":
-        return "ring-blue-200 dark:ring-blue-900";
+        return "ring-primary/20";
       case "upcoming":
-        return "ring-zinc-200 dark:ring-zinc-700";
+        return "ring-muted";
       default:
-        return "ring-zinc-200 dark:ring-zinc-700";
+        return "ring-muted";
+    }
+  };
+
+  const getStatusBadgeVariant = (status?: string) => {
+    switch (status) {
+      case "completed":
+        return "default" as const;
+      case "active":
+        return "secondary" as const;
+      case "upcoming":
+        return "outline" as const;
+      default:
+        return "outline" as const;
     }
   };
 
@@ -83,16 +98,16 @@ export const TimelineView = ({ data, config = {} }: TimelineViewProps) => {
 
                 {/* Content */}
                 <div className="text-center">
-                  <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-1">
+                  <div className="text-sm font-semibold text-foreground mb-1">
                     {item.title}
                   </div>
                   {variant === "detailed" && (
-                    <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                    <div className="text-xs text-muted-foreground">
                       {item.description}
                     </div>
                   )}
                   {item.time && (
-                    <div className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
+                    <div className="text-xs text-muted-foreground mt-1">
                       {item.time}
                     </div>
                   )}
@@ -110,7 +125,7 @@ export const TimelineView = ({ data, config = {} }: TimelineViewProps) => {
     <div className="md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full pb-6">
       <div className="relative">
         {/* Vertical line */}
-        <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-zinc-200 dark:bg-zinc-700" />
+        <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-border" />
 
         <div className="space-y-6">
           {data.map((item, index) => (
@@ -136,23 +151,32 @@ export const TimelineView = ({ data, config = {} }: TimelineViewProps) => {
 
               {/* Content */}
               <div className="flex-1 pb-2">
-                <div className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-4 shadow-sm">
-                  <div className="flex items-start justify-between mb-1">
-                    <div className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                      {item.title}
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-1">
+                      <div className="text-base font-semibold text-foreground">
+                        {item.title}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {item.status && (
+                          <Badge variant={getStatusBadgeVariant(item.status)}>
+                            {item.status}
+                          </Badge>
+                        )}
+                        {item.time && (
+                          <div className="text-xs text-muted-foreground ml-2 flex-shrink-0">
+                            {item.time}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    {item.time && (
-                      <div className="text-xs text-zinc-500 dark:text-zinc-400 ml-2 flex-shrink-0">
-                        {item.time}
+                    {(variant === "default" || variant === "detailed") && (
+                      <div className="text-sm text-muted-foreground mt-1">
+                        {item.description}
                       </div>
                     )}
-                  </div>
-                  {(variant === "default" || variant === "detailed") && (
-                    <div className="text-sm text-zinc-600 dark:text-zinc-300 mt-1">
-                      {item.description}
-                    </div>
-                  )}
-                </div>
+                  </CardContent>
+                </Card>
               </div>
             </motion.div>
           ))}

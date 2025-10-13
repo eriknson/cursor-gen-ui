@@ -79,52 +79,18 @@ class CursorAgent {
    * Generate code/text using cursor-agent CLI
    */
   async generate(options: CursorOptions): Promise<CursorResult> {
-    if (options.debug) {
-      console.log("🔍 Debug: Entering generate() method");
-    }
-
     const opts = { ...this.defaultOptions, ...options };
-
-    if (options.debug) {
-      console.log("🔍 Debug: Merged options:", opts);
-      console.log("🔍 Debug: Output format:", opts.outputFormat);
-    }
 
     // Default to stream-json, but handle json format directly
     if (opts.outputFormat === "json") {
-      if (options.debug) {
-        console.log("🔍 Debug: Using JSON format - calling execAsync path");
-      }
       try {
         const command = this.buildCommand(opts);
-
-        // Debug output
-        if (
-          opts.debug ||
-          process.env.DEBUG_CURSOR ||
-          process.env.NODE_ENV === "development"
-        ) {
-          console.log("🔧 Debug: Executing command:");
-          console.log(command);
-        }
 
         const { stdout, stderr } = await execAsync(command, {
           env: {
             ...process.env,
           },
         });
-
-        // Debug logging for stdio output
-        if (opts.debug) {
-          if (stdout) {
-            console.log("📤 Debug: STDOUT received:");
-            console.log(stdout);
-          }
-          if (stderr) {
-            console.log("⚠️ Debug: STDERR received:");
-            console.log(stderr);
-          }
-        }
 
         if (stderr && !stdout) {
           throw new Error(stderr);
@@ -133,15 +99,8 @@ class CursorAgent {
         let parsedOutput = stdout;
         try {
           parsedOutput = JSON.parse(stdout);
-          if (opts.debug) {
-            console.log("📊 Debug: Parsed JSON output:");
-            console.log(parsedOutput);
-          }
         } catch (e) {
           // If JSON parsing fails, return the raw output
-          if (opts.debug) {
-            console.log("⚠️ Debug: JSON parsing failed, returning raw output");
-          }
         }
 
         return {
@@ -149,10 +108,6 @@ class CursorAgent {
           output: parsedOutput,
         };
       } catch (error) {
-        if (opts.debug) {
-          console.log("❌ Debug: Command execution failed:");
-          console.log(error);
-        }
         return {
           success: false,
           output: "",
@@ -162,11 +117,6 @@ class CursorAgent {
     }
 
     // Default to stream-json - delegate to streaming runner
-    if (options.debug) {
-      console.log(
-        "🔍 Debug: Using stream-json format - delegating to generateStream",
-      );
-    }
     const streamResult = await this.generateStream(opts);
     return {
       success: streamResult.success,
@@ -180,6 +130,11 @@ class CursorAgent {
    * Helper to log stream events in a compact, readable format
    */
   private logStreamEvent(event: CursorStreamEvent): void {
+    // Only log in development mode
+    if (process.env.NODE_ENV !== "development") {
+      return;
+    }
+
     const truncate = (str: string, maxLen: number = 80) => {
       if (str.length <= maxLen) return str;
       return str.substring(0, maxLen) + "...";

@@ -2,23 +2,28 @@
 
 import { motion } from "framer-motion";
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Filler,
-} from "chart.js";
-import { Line } from "react-chartjs-2";
+  LineChart as RechartsLineChart,
+  Line,
+} from "recharts";
 import { ComponentConfig } from "@/lib/agent-wrapper";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  ChartContainer,
+  type ChartConfig,
+} from "@/components/ui/chart";
+import NumberFlow from "@number-flow/react";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Filler
-);
+// Monochrome color palette
+const MONOCHROME_COLORS = [
+  "hsl(var(--foreground))",        // Primary black/dark
+  "hsl(var(--muted-foreground))",  // Secondary grey
+  "hsl(var(--muted))",             // Light grey
+  "hsl(var(--border))",            // Border grey
+  "hsl(var(--secondary))",         // Secondary background
+  "hsl(var(--accent))",            // Accent grey
+  "hsl(var(--card-foreground))",    // Card text
+  "hsl(var(--popover-foreground))", // Popover text
+];
 
 interface StockData {
   symbol: string;
@@ -41,41 +46,25 @@ export const StockTicker = ({ data, config = {} }: StockTickerProps) => {
 
   const variant = config.variant || "detailed";
   const showSparkline = config.showSparkline ?? true;
-  const positiveColor = config.colors?.[0] || "#10b981";
-  const negativeColor = config.colors?.[1] || "#ef4444";
+  const positiveColor = config.colors?.[0] || MONOCHROME_COLORS[0];
+  const negativeColor = config.colors?.[1] || MONOCHROME_COLORS[1];
 
   const isPositive = data.change >= 0;
   const changeColor = isPositive ? positiveColor : negativeColor;
 
-  // Prepare sparkline data
+  // Prepare sparkline data for Recharts
   const sparklineData = data.history
-    ? {
-        labels: data.history.map((h) => h.date),
-        datasets: [
-          {
-            data: data.history.map((h) => h.price),
-            borderColor: changeColor,
-            backgroundColor: `${changeColor}22`,
-            borderWidth: 1.5,
-            fill: true,
-            tension: 0.4,
-            pointRadius: 0,
-            pointHoverRadius: 0,
-          },
-        ],
-      }
+    ? data.history.map((h) => ({
+        date: h.date,
+        price: h.price,
+      }))
     : null;
 
-  const sparklineOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: { enabled: false },
-    },
-    scales: {
-      x: { display: false },
-      y: { display: false },
+  // Create chart config for shadcn
+  const chartConfig: ChartConfig = {
+    price: {
+      label: "Price",
+      color: changeColor,
     },
   };
 
@@ -86,54 +75,77 @@ export const StockTicker = ({ data, config = {} }: StockTickerProps) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-800 p-6 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-1">
-              {data.symbol}
+      <Card className="bg-gradient-to-br from-muted/50 to-muted/30">
+        <CardHeader>
+          <CardTitle>{data.symbol}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Header */}
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <div className="text-4xl font-bold text-foreground">
+                <NumberFlow 
+                  value={data.price} 
+                  format={{ style: 'currency', currency: 'USD', minimumFractionDigits: 2 }}
+                />
+              </div>
             </div>
-            <div className="text-4xl font-bold text-zinc-900 dark:text-zinc-100">
-              ${data.price.toFixed(2)}
+            <div className="text-right">
+              <div
+                className={`text-lg font-semibold ${isPositive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+              >
+                <NumberFlow 
+                  value={data.change} 
+                  format={{ signDisplay: 'always', minimumFractionDigits: 2 }}
+                />
+              </div>
+              <div
+                className={`text-sm font-medium ${isPositive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+              >
+                <NumberFlow 
+                  value={data.changePercent} 
+                  format={{ signDisplay: 'always', minimumFractionDigits: 2 }}
+                  suffix="%"
+                />
+              </div>
             </div>
           </div>
-          <div className="text-right">
-            <div
-              className={`text-lg font-semibold ${isPositive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
-            >
-              {isPositive ? "+" : ""}
-              {data.change.toFixed(2)}
-            </div>
-            <div
-              className={`text-sm font-medium ${isPositive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
-            >
-              {isPositive ? "+" : ""}
-              {data.changePercent.toFixed(2)}%
-            </div>
-          </div>
-        </div>
 
-        {/* Sparkline */}
-        {showSparkline && sparklineData && variant === "detailed" && (
-          <div className="mt-4">
-            <div className="h-[80px] -mx-2">
-              <Line data={sparklineData} options={sparklineOptions} />
+          {/* Sparkline */}
+          {showSparkline && sparklineData && variant === "detailed" && (
+            <div className="mt-4">
+              <ChartContainer config={chartConfig} className="h-[80px]">
+                <RechartsLineChart data={sparklineData}>
+                  <Line
+                    type="monotone"
+                    dataKey="price"
+                    stroke={changeColor}
+                    strokeWidth={1.5}
+                    dot={false}
+                    activeDot={false}
+                  />
+                </RechartsLineChart>
+              </ChartContainer>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Additional Info */}
-        {variant === "detailed" && data.volume && (
-          <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-zinc-500 dark:text-zinc-400">Volume</span>
-              <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                {(data.volume / 1000000).toFixed(2)}M
-              </span>
+          {/* Additional Info */}
+          {variant === "detailed" && data.volume && (
+            <div className="mt-4 pt-4 border-t border-border">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Volume</span>
+                <span className="font-medium text-foreground">
+                  <NumberFlow 
+                    value={data.volume / 1000000} 
+                    format={{ maximumFractionDigits: 2 }}
+                    suffix="M"
+                  />
+                </span>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </CardContent>
+      </Card>
     </motion.div>
   );
 };

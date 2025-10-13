@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 import { ComponentConfig } from "@/lib/agent-wrapper";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import NumberFlow from "@number-flow/react";
 
 interface WeatherData {
   location: string;
@@ -48,34 +50,33 @@ export const WeatherCard = ({ data, config = {} }: WeatherCardProps) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div
+      <Card
         className={`
         ${
           theme === "vibrant"
-            ? "bg-gradient-to-br from-blue-400 to-cyan-500 text-white"
-            : "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700"
+            ? "bg-gradient-to-br from-blue-400 to-cyan-500 text-white border-0"
+            : ""
         }
-        rounded-xl shadow-lg overflow-hidden
+        overflow-hidden
       `}
       >
-        {/* Current Weather */}
-        <div className="p-6">
+        <CardHeader className="p-6">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <div
+              <CardTitle
                 className={`text-lg font-medium mb-1 ${
                   theme === "vibrant"
                     ? "text-white"
-                    : "text-zinc-900 dark:text-zinc-100"
+                    : "text-foreground"
                 }`}
               >
                 {data.location}
-              </div>
+              </CardTitle>
               <div
                 className={`text-sm ${
                   theme === "vibrant"
                     ? "text-white/80"
-                    : "text-zinc-500 dark:text-zinc-400"
+                    : "text-muted-foreground"
                 }`}
               >
                 {data.condition}
@@ -88,11 +89,10 @@ export const WeatherCard = ({ data, config = {} }: WeatherCardProps) => {
             className={`text-6xl font-bold mb-4 ${
               theme === "vibrant"
                 ? "text-white"
-                : "text-zinc-900 dark:text-zinc-100"
+                : "text-foreground"
             }`}
           >
-            {data.temperature}
-            {tempSymbol}
+            <NumberFlow value={data.temperature} suffix={tempSymbol} />
           </div>
 
           {/* Additional Details */}
@@ -102,7 +102,7 @@ export const WeatherCard = ({ data, config = {} }: WeatherCardProps) => {
                 className={`flex gap-6 pt-4 border-t ${
                   theme === "vibrant"
                     ? "border-white/20"
-                    : "border-zinc-200 dark:border-zinc-700"
+                    : "border-border"
                 }`}
               >
                 {data.humidity && (
@@ -113,7 +113,7 @@ export const WeatherCard = ({ data, config = {} }: WeatherCardProps) => {
                         className={`text-xs ${
                           theme === "vibrant"
                             ? "text-white/70"
-                            : "text-zinc-500 dark:text-zinc-400"
+                            : "text-muted-foreground"
                         }`}
                       >
                         Humidity
@@ -122,10 +122,10 @@ export const WeatherCard = ({ data, config = {} }: WeatherCardProps) => {
                         className={`text-sm font-medium ${
                           theme === "vibrant"
                             ? "text-white"
-                            : "text-zinc-700 dark:text-zinc-300"
+                            : "text-foreground"
                         }`}
                       >
-                        {data.humidity}%
+                        <NumberFlow value={data.humidity} suffix="%" />
                       </div>
                     </div>
                   </div>
@@ -138,7 +138,7 @@ export const WeatherCard = ({ data, config = {} }: WeatherCardProps) => {
                         className={`text-xs ${
                           theme === "vibrant"
                             ? "text-white/70"
-                            : "text-zinc-500 dark:text-zinc-400"
+                            : "text-muted-foreground"
                         }`}
                       >
                         Wind
@@ -147,7 +147,7 @@ export const WeatherCard = ({ data, config = {} }: WeatherCardProps) => {
                         className={`text-sm font-medium ${
                           theme === "vibrant"
                             ? "text-white"
-                            : "text-zinc-700 dark:text-zinc-300"
+                            : "text-foreground"
                         }`}
                       >
                         {data.wind}
@@ -157,13 +157,13 @@ export const WeatherCard = ({ data, config = {} }: WeatherCardProps) => {
                 )}
               </div>
             )}
-        </div>
+        </CardHeader>
 
         {/* Forecast */}
         {variant === "forecast" && data.forecast && data.forecast.length > 0 && (
-          <div
+          <CardContent
             className={`px-6 pb-6 pt-2 ${
-              theme === "vibrant" ? "bg-black/10" : "bg-zinc-50 dark:bg-zinc-900"
+              theme === "vibrant" ? "bg-black/10" : "bg-muted/50"
             }`}
           >
             <div className="grid grid-cols-3 gap-3">
@@ -173,7 +173,7 @@ export const WeatherCard = ({ data, config = {} }: WeatherCardProps) => {
                   className={`text-center p-3 rounded-lg ${
                     theme === "vibrant"
                       ? "bg-white/10"
-                      : "bg-white dark:bg-zinc-800"
+                      : "bg-background"
                   }`}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -183,7 +183,7 @@ export const WeatherCard = ({ data, config = {} }: WeatherCardProps) => {
                     className={`text-xs font-medium mb-2 ${
                       theme === "vibrant"
                         ? "text-white/80"
-                        : "text-zinc-500 dark:text-zinc-400"
+                        : "text-muted-foreground"
                     }`}
                   >
                     {day.day}
@@ -195,18 +195,17 @@ export const WeatherCard = ({ data, config = {} }: WeatherCardProps) => {
                     className={`text-lg font-bold ${
                       theme === "vibrant"
                         ? "text-white"
-                        : "text-zinc-900 dark:text-zinc-100"
+                        : "text-foreground"
                     }`}
                   >
-                    {day.temp}
-                    {tempSymbol}
+                    <NumberFlow value={day.temp} suffix={tempSymbol} />
                   </div>
                 </motion.div>
               ))}
             </div>
-          </div>
+          </CardContent>
         )}
-      </div>
+      </Card>
     </motion.div>
   );
 };

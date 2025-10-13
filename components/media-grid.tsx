@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ComponentConfig } from "@/lib/agent-wrapper";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface MediaItem {
   url: string;
@@ -45,34 +46,37 @@ export const MediaGrid = ({ data, config = {} }: MediaGridProps) => {
         {data.map((item, index) => (
           <motion.div
             key={index}
-            className="relative rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-800 shadow-sm hover:shadow-md transition-shadow"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.08 }}
           >
-            <div className={aspectRatio[size]}>
-              <img
-                src={item.url}
-                alt={item.alt || item.caption || item.title || `Media ${index + 1}`}
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            {/* Overlay with caption */}
-            {(item.caption || item.title) && (
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300">
-                <div className="absolute bottom-0 left-0 right-0 p-3">
-                  {item.title && (
-                    <div className="text-sm font-semibold text-white mb-1">
-                      {item.title}
-                    </div>
-                  )}
-                  {item.caption && (
-                    <div className="text-xs text-white/90">{item.caption}</div>
-                  )}
+            <Card className="overflow-hidden hover:shadow-md transition-shadow">
+              <CardContent className="p-0">
+                <div className={aspectRatio[size]}>
+                  <img
+                    src={item.url}
+                    alt={item.alt || item.caption || item.title || `Media ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-              </div>
-            )}
+
+                {/* Overlay with caption */}
+                {(item.caption || item.title) && (
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      {item.title && (
+                        <div className="text-sm font-semibold text-white mb-1">
+                          {item.title}
+                        </div>
+                      )}
+                      {item.caption && (
+                        <div className="text-xs text-white/90">{item.caption}</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </motion.div>
         ))}
       </div>

@@ -12,7 +12,7 @@ export interface TemplateContext {
  * Base wrapper template for all components
  */
 export const wrapperTemplate = (content: string) => `
-  <div className="flex flex-col gap-3">
+  <div className="flex flex-col gap-4">
     {content}
   </div>
 `;

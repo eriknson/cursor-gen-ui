@@ -2,29 +2,34 @@
 
 import { motion } from "framer-motion";
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-} from "chart.js";
-import { Line } from "react-chartjs-2";
+  LineChart as RechartsLineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from "recharts";
 import { ComponentConfig } from "@/lib/agent-wrapper";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
+// Monochrome color palette
+const MONOCHROME_COLORS = [
+  "hsl(var(--foreground))",        // Primary black/dark
+  "hsl(var(--muted-foreground))",  // Secondary grey
+  "hsl(var(--muted))",             // Light grey
+  "hsl(var(--border))",            // Border grey
+  "hsl(var(--secondary))",         // Secondary background
+  "hsl(var(--accent))",            // Accent grey
+  "hsl(var(--card-foreground))",    // Card text
+  "hsl(var(--popover-foreground))", // Popover text
+];
 
 interface DataPoint {
   label?: string;
@@ -59,13 +64,8 @@ export const LineChart = ({ data, config = {} }: LineChartProps) => {
   // Detect data format: multi-dataset or single dataset
   const isMultiDataset = !Array.isArray(data) && 'labels' in data && 'datasets' in data;
 
-  let labels: string[];
-  let datasets: any[];
-
-  const defaultColors = [
-    "#6366f1", "#f43f5e", "#10b981", "#f59e0b", "#8b5cf6", 
-    "#14b8a6", "#ec4899", "#06b6d4"
-  ];
+  let chartData: any[];
+  let chartConfig: ChartConfig;
 
   if (isMultiDataset) {
     // Multi-dataset format
@@ -74,29 +74,24 @@ export const LineChart = ({ data, config = {} }: LineChartProps) => {
       return null;
     }
     
-    labels = multiData.labels;
-    datasets = multiData.datasets.map((dataset, idx) => {
-      const color = dataset.color || config.colors?.[idx] || defaultColors[idx % defaultColors.length];
-      return {
-        label: dataset.name,
-        data: dataset.values,
-        borderColor: color,
-        backgroundColor:
-          config.theme === "vibrant"
-            ? `${color}33`
-            : config.theme === "minimal"
-              ? "transparent"
-              : `${color}22`,
-        borderWidth: config.theme === "minimal" ? 1.5 : 2,
-        fill: config.theme !== "minimal",
-        tension: config.variant === "smooth" ? 0.4 : config.variant === "stepped" ? 0 : 0.4,
-        pointRadius: config.showPoints ?? true ? 3 : 0,
-        pointHoverRadius: 5,
-        pointBackgroundColor: color,
-        pointBorderColor: "#fff",
-        pointBorderWidth: 2,
-      };
+    // Transform to Recharts format
+    chartData = multiData.labels.map((label, index) => {
+      const dataPoint: any = { name: label };
+      multiData.datasets.forEach((dataset, datasetIndex) => {
+        dataPoint[dataset.name] = dataset.values[index];
+      });
+      return dataPoint;
     });
+
+    // Create chart config for shadcn
+    chartConfig = multiData.datasets.reduce((acc, dataset, idx) => {
+      const color = dataset.color || config.colors?.[idx] || MONOCHROME_COLORS[idx % MONOCHROME_COLORS.length];
+      acc[dataset.name] = {
+        label: dataset.name,
+        color: color,
+      };
+      return acc;
+    }, {} as ChartConfig);
   } else {
     // Single dataset format (backward compatible)
     const singleData = data as DataPoint[];
@@ -105,110 +100,24 @@ export const LineChart = ({ data, config = {} }: LineChartProps) => {
     }
 
     const normalizedData = singleData.map((d) => ({
-      label: d.label || d.x || d.date || "",
+      name: d.label || d.x || d.date || "",
       value: d.value ?? d.y ?? d.price ?? 0,
     }));
 
-    labels = normalizedData.map((d) => d.label);
-    const values = normalizedData.map((d) => d.value);
-    const primaryColor = config.colors?.[0] || defaultColors[0];
+    chartData = normalizedData;
+    const primaryColor = config.colors?.[0] || MONOCHROME_COLORS[0];
 
-    datasets = [
-      {
-        data: values,
-        borderColor: primaryColor,
-        backgroundColor:
-          config.theme === "vibrant"
-            ? `${primaryColor}33`
-            : config.theme === "minimal"
-              ? "transparent"
-              : `${primaryColor}22`,
-        borderWidth: config.theme === "minimal" ? 1.5 : 2,
-        fill: config.theme !== "minimal",
-        tension: config.variant === "smooth" ? 0.4 : config.variant === "stepped" ? 0 : 0.4,
-        pointRadius: config.showPoints ?? true ? 3 : 0,
-        pointHoverRadius: 5,
-        pointBackgroundColor: primaryColor,
-        pointBorderColor: "#fff",
-        pointBorderWidth: 2,
+    chartConfig = {
+      value: {
+        label: "Value",
+        color: primaryColor,
       },
-    ];
+    };
   }
 
   const showGrid = config.showGrid ?? true;
-  const showLegend = config.showLegend ?? (isMultiDataset && datasets.length > 1);
-
-  const chartData = {
-    labels,
-    datasets,
-  };
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: showLegend,
-        position: "top" as const,
-        labels: {
-          usePointStyle: true,
-          padding: 15,
-          font: {
-            size: 11,
-          },
-          color: "#71717a",
-        },
-      },
-      tooltip: {
-        mode: "index" as const,
-        intersect: false,
-        backgroundColor: "rgba(0, 0, 0, 0.8)",
-        padding: 12,
-        cornerRadius: 8,
-        titleFont: {
-          size: 12,
-          weight: "normal" as const,
-        },
-        bodyFont: {
-          size: 14,
-          weight: "bold" as const,
-        },
-      },
-    },
-    scales: {
-      x: {
-        display: showGrid,
-        grid: {
-          display: showGrid,
-          color: "rgba(0, 0, 0, 0.05)",
-        },
-        ticks: {
-          font: {
-            size: 11,
-          },
-          color: "#71717a",
-        },
-      },
-      y: {
-        display: showGrid,
-        grid: {
-          display: showGrid,
-          color: "rgba(0, 0, 0, 0.05)",
-        },
-        ticks: {
-          font: {
-            size: 11,
-          },
-          color: "#71717a",
-        },
-      },
-    },
-    interaction: {
-      mode: "nearest" as const,
-      axis: "x" as const,
-      intersect: false,
-    },
-  };
+  const showLegend = config.showLegend ?? (isMultiDataset && Object.keys(chartConfig).length > 1);
+  const title = config.title || (isMultiDataset && chartData.length > 0 ? chartConfig[Object.keys(chartConfig)[0]]?.label : null);
 
   return (
     <motion.div
@@ -217,11 +126,51 @@ export const LineChart = ({ data, config = {} }: LineChartProps) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="bg-white dark:bg-zinc-900 p-4 rounded-lg border border-zinc-200 dark:border-zinc-800">
-        <div className={showLegend ? "h-[240px]" : "h-[200px]"}>
-          <Line data={chartData} options={options} />
-        </div>
-      </div>
+      <Card>
+        {title && (
+          <CardHeader>
+            <CardTitle>{title}</CardTitle>
+          </CardHeader>
+        )}
+        <CardContent className={title ? "p-4" : "p-4 pt-6"}>
+          <div className="w-full h-[280px]">
+            <ChartContainer config={chartConfig} className="h-full w-full">
+              <RechartsLineChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                {showGrid && <CartesianGrid strokeDasharray="3 3" />}
+                <XAxis 
+                  dataKey="name"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  fontSize={12}
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  fontSize={12}
+                />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                {showLegend && <ChartLegend content={<ChartLegendContent />} />}
+                {Object.keys(chartConfig).map((key, index) => {
+                  const color = chartConfig[key]?.color || MONOCHROME_COLORS[index % MONOCHROME_COLORS.length];
+                  return (
+                    <Line
+                      key={key}
+                      dataKey={key}
+                      type={config.variant === "stepped" ? "step" : "monotone"}
+                      stroke={color}
+                      strokeWidth={config.theme === "minimal" ? 1.5 : 2}
+                      dot={config.showPoints ?? true ? { r: 3 } : false}
+                      activeDot={{ r: 5 }}
+                    />
+                  );
+                })}
+              </RechartsLineChart>
+            </ChartContainer>
+          </div>
+        </CardContent>
+      </Card>
     </motion.div>
   );
 };

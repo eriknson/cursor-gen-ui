@@ -1,6 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent } from "@/components/ui/card";
 
 export const TableView = ({ data }: { data: Record<string, any>[] }) => {
   if (!data || data.length === 0) {
@@ -14,46 +24,51 @@ export const TableView = ({ data }: { data: Record<string, any>[] }) => {
 
   return (
     <motion.div
-      className="md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full pb-6 overflow-x-auto"
+      className="md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full pb-6"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      <table className="w-full border-collapse bg-zinc-100 dark:bg-zinc-800 rounded-lg overflow-hidden">
-        <thead>
-          <tr className="bg-zinc-200 dark:bg-zinc-700">
-            {keys.map((key) => (
-              <th
-                key={key}
-                className="text-left p-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 border-b border-zinc-300 dark:border-zinc-600"
-              >
-                {key}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row, rowIndex) => (
-            <motion.tr
-              key={rowIndex}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: rowIndex * 0.05 }}
-              className="border-b border-zinc-200 dark:border-zinc-700 last:border-b-0"
-            >
-              {keys.map((key) => (
-                <td
-                  key={key}
-                  className="p-2 text-sm text-zinc-800 dark:text-zinc-300"
-                >
-                  {row[key] !== undefined && row[key] !== null
-                    ? String(row[key])
-                    : "-"}
-                </td>
-              ))}
-            </motion.tr>
-          ))}
-        </tbody>
-      </table>
+      <Card>
+        <CardContent className="p-0">
+          <ScrollArea className="h-[400px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {keys.map((key) => (
+                    <TableHead
+                      key={key}
+                      className="text-xs font-semibold text-muted-foreground"
+                    >
+                      {key}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.map((row, rowIndex) => (
+                  <motion.tr
+                    key={rowIndex}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: rowIndex * 0.05 }}
+                  >
+                    {keys.map((key) => (
+                      <TableCell
+                        key={key}
+                        className="text-sm text-foreground"
+                      >
+                        {row[key] !== undefined && row[key] !== null
+                          ? String(row[key])
+                          : "-"}
+                      </TableCell>
+                    ))}
+                  </motion.tr>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </CardContent>
+      </Card>
     </motion.div>
   );
 };

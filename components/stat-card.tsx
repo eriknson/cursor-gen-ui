@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 import { ComponentConfig } from "@/lib/agent-wrapper";
+import { Card, CardContent } from "@/components/ui/card";
+import NumberFlow from "@number-flow/react";
 
 interface StatItem {
   value: string | number;
@@ -32,7 +34,7 @@ export const StatCard = ({ data, config = {} }: StatCardProps) => {
       case "down":
         return "text-red-600 dark:text-red-400";
       default:
-        return "text-zinc-600 dark:text-zinc-400";
+        return "text-muted-foreground";
     }
   };
 
@@ -81,51 +83,59 @@ export const StatCard = ({ data, config = {} }: StatCardProps) => {
         {data.map((stat, index) => (
           <motion.div
             key={index}
-            className={`
-              ${sizeClasses[size]}
-              ${
-                variant === "highlighted"
-                  ? "bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-2 border-blue-200 dark:border-blue-800"
-                  : variant === "minimal"
-                    ? "bg-transparent border border-zinc-200 dark:border-zinc-700"
-                    : "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700"
-              }
-              rounded-xl shadow-sm
-            `}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1, duration: 0.3 }}
           >
-            {/* Icon */}
-            {stat.icon && (
-              <div className="text-2xl mb-2 opacity-80">{stat.icon}</div>
-            )}
-
-            {/* Value */}
-            <div
-              className={`${valueSizeClasses[size]} font-bold text-zinc-900 dark:text-zinc-100`}
+            <Card
+              className={`
+                ${sizeClasses[size]}
+                ${
+                  variant === "highlighted"
+                    ? "bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-2 border-blue-200 dark:border-blue-800"
+                    : variant === "minimal"
+                      ? "bg-transparent border border-border"
+                      : ""
+                }
+              `}
             >
-              {stat.value}
-            </div>
+              <CardContent className="p-0">
+                {/* Icon */}
+                {stat.icon && (
+                  <div className="text-2xl mb-2 opacity-80">{stat.icon}</div>
+                )}
 
-            {/* Label */}
-            <div
-              className={`${labelSizeClasses[size]} text-zinc-500 dark:text-zinc-400 mt-1`}
-            >
-              {stat.label}
-            </div>
+                {/* Value */}
+                <div
+                  className={`${valueSizeClasses[size]} font-bold text-foreground`}
+                >
+                  {typeof stat.value === 'number' ? (
+                    <NumberFlow value={stat.value} />
+                  ) : (
+                    stat.value
+                  )}
+                </div>
 
-            {/* Change/Trend */}
-            {showTrend && stat.change && (
-              <div
-                className={`flex items-center gap-1 mt-2 text-sm font-medium ${getTrendColor(stat.trend)}`}
-              >
-                <span className="text-base">
-                  {getTrendIcon(stat.trend)}
-                </span>
-                <span>{stat.change}</span>
-              </div>
-            )}
+                {/* Label */}
+                <div
+                  className={`${labelSizeClasses[size]} text-muted-foreground mt-1`}
+                >
+                  {stat.label}
+                </div>
+
+                {/* Change/Trend */}
+                {showTrend && stat.change && (
+                  <div
+                    className={`flex items-center gap-1 mt-2 text-sm font-medium ${getTrendColor(stat.trend)}`}
+                  >
+                    <span className="text-base">
+                      {getTrendIcon(stat.trend)}
+                    </span>
+                    <span>{stat.change}</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </motion.div>
         ))}
       </div>

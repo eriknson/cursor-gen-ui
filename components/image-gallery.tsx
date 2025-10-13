@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface ImageItem {
   url: string;
@@ -20,23 +21,26 @@ export const ImageGallery = ({ images }: { images: ImageItem[] }) => {
         {images.map((image, index) => (
           <motion.div
             key={index}
-            className="relative rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-800"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
           >
-            <div className="aspect-square relative">
-              <img
-                src={image.url}
-                alt={image.alt || image.caption || `Image ${index + 1}`}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            {image.caption && (
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                <div className="text-xs text-white">{image.caption}</div>
-              </div>
-            )}
+            <Card className="overflow-hidden">
+              <CardContent className="p-0">
+                <div className="aspect-square relative">
+                  <img
+                    src={image.url}
+                    alt={image.alt || image.caption || `Image ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                {image.caption && (
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                    <div className="text-xs text-white">{image.caption}</div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </motion.div>
         ))}
       </div>

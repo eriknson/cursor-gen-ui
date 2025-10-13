@@ -12,13 +12,21 @@ export function useScrollToBottom<T extends HTMLElement>(): [
     const end = endRef.current;
 
     if (container && end) {
-      const observer = new MutationObserver(() => {
-        end.scrollIntoView({ behavior: "smooth" });
+      const observer = new MutationObserver((mutations) => {
+        // Only scroll if direct children are added/removed (new messages)
+        // Ignore mutations within existing elements (like tooltips, hovers, etc)
+        const hasDirectChildChanges = mutations.some(
+          (mutation) => mutation.target === container && mutation.type === "childList"
+        );
+        
+        if (hasDirectChildChanges) {
+          end.scrollIntoView({ behavior: "smooth" });
+        }
       });
 
       observer.observe(container, {
         childList: true,
-        subtree: true,
+        subtree: false, // Only watch direct children, not nested changes
       });
 
       return () => observer.disconnect();

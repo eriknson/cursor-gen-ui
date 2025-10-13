@@ -2,6 +2,15 @@
 
 import { motion } from "framer-motion";
 import { ComponentConfig } from "@/lib/agent-wrapper";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface ComparisonRow {
   feature: string;
@@ -33,29 +42,29 @@ export const ComparisonTable = ({ data, config = {} }: ComparisonTableProps) => 
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-zinc-50 dark:bg-zinc-800">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Feature
-                </th>
-                <th
-                  className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider"
+                </TableHead>
+                <TableHead
+                  className="text-xs font-semibold uppercase tracking-wider text-center"
                   style={{ color: color1 }}
                 >
                   Option 1
-                </th>
-                <th
-                  className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider"
+                </TableHead>
+                <TableHead
+                  className="text-xs font-semibold uppercase tracking-wider text-center"
                   style={{ color: color2 }}
                 >
                   Option 2
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {data.map((row, index) => {
                 const isDifferent =
                   highlightDifferences && row.option1 !== row.option2;
@@ -63,16 +72,15 @@ export const ComparisonTable = ({ data, config = {} }: ComparisonTableProps) => 
                 return (
                   <motion.tr
                     key={index}
-                    className="border-t border-zinc-200 dark:border-zinc-700"
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
                   >
-                    <td className="px-4 py-3 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    <TableCell className="text-sm font-medium text-foreground">
                       {row.feature}
-                    </td>
-                    <td
-                      className={`px-4 py-3 text-sm text-center ${
+                    </TableCell>
+                    <TableCell
+                      className={`text-sm text-center ${
                         isDifferent && row.winner === 1
                           ? "font-semibold"
                           : ""
@@ -92,13 +100,13 @@ export const ComparisonTable = ({ data, config = {} }: ComparisonTableProps) => 
                         {showWinner && row.winner === 1 && (
                           <span className="text-base">✓</span>
                         )}
-                        <span className="text-zinc-700 dark:text-zinc-300">
+                        <span className="text-foreground">
                           {row.option1}
                         </span>
                       </div>
-                    </td>
-                    <td
-                      className={`px-4 py-3 text-sm text-center ${
+                    </TableCell>
+                    <TableCell
+                      className={`text-sm text-center ${
                         isDifferent && row.winner === 2
                           ? "font-semibold"
                           : ""
@@ -118,18 +126,18 @@ export const ComparisonTable = ({ data, config = {} }: ComparisonTableProps) => 
                         {showWinner && row.winner === 2 && (
                           <span className="text-base">✓</span>
                         )}
-                        <span className="text-zinc-700 dark:text-zinc-300">
+                        <span className="text-foreground">
                           {row.option2}
                         </span>
                       </div>
-                    </td>
+                    </TableCell>
                   </motion.tr>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </motion.div>
   );
 };
