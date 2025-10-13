@@ -293,12 +293,25 @@ class CursorAgent {
       console.log("📦 Downloading cursor-agent to /tmp...");
       console.log("Environment: Vercel =", process.env.VERCEL, "NODE_ENV =", process.env.NODE_ENV);
       
-      // Download the install script and run it with custom path
+      // Download the install script and run it
       const { stdout, stderr } = await execAsync(`
-        curl -fsS https://cursor.com/install | bash -s -- --no-modify-path 2>&1 &&
-        ls -la ~/.cursor/bin/ 2>&1 &&
-        cp ~/.cursor/bin/cursor-agent ${tmpPath} 2>&1 &&
-        chmod +x ${tmpPath} 2>&1
+        curl -fsS https://cursor.com/install | bash 2>&1 &&
+        (
+          if [ -f ~/.local/bin/cursor-agent ]; then
+            echo "Found in ~/.local/bin"
+            cp ~/.local/bin/cursor-agent ${tmpPath}
+          elif [ -f ~/.cursor/bin/cursor-agent ]; then
+            echo "Found in ~/.cursor/bin"
+            cp ~/.cursor/bin/cursor-agent ${tmpPath}
+          elif [ -f /usr/local/bin/cursor-agent ]; then
+            echo "Found in /usr/local/bin"
+            cp /usr/local/bin/cursor-agent ${tmpPath}
+          else
+            echo "Binary not found in any location"
+            exit 1
+          fi
+        ) &&
+        chmod +x ${tmpPath}
       `);
       
       console.log("Download stdout:", stdout);
