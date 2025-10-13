@@ -287,22 +287,31 @@ class CursorAgent {
         console.log("✅ cursor-agent found in /tmp");
         return tmpPath;
       } catch {
-        // Need to download
+        console.log("⚠️ cursor-agent not in /tmp, will attempt download");
       }
       
       console.log("📦 Downloading cursor-agent to /tmp...");
+      console.log("Environment: Vercel =", process.env.VERCEL, "NODE_ENV =", process.env.NODE_ENV);
       
       // Download the install script and run it with custom path
-      await execAsync(`
-        curl -fsS https://cursor.com/install | bash -s -- --no-modify-path &&
-        cp ~/.cursor/bin/cursor-agent ${tmpPath} &&
-        chmod +x ${tmpPath}
+      const { stdout, stderr } = await execAsync(`
+        curl -fsS https://cursor.com/install | bash -s -- --no-modify-path 2>&1 &&
+        ls -la ~/.cursor/bin/ 2>&1 &&
+        cp ~/.cursor/bin/cursor-agent ${tmpPath} 2>&1 &&
+        chmod +x ${tmpPath} 2>&1
       `);
+      
+      console.log("Download stdout:", stdout);
+      if (stderr) console.log("Download stderr:", stderr);
       
       console.log("✅ cursor-agent downloaded successfully");
       return tmpPath;
     } catch (error) {
       console.error("❌ Failed to download cursor-agent:", error);
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
       return null;
     }
   }
@@ -311,15 +320,19 @@ class CursorAgent {
    * Check if cursor-agent CLI is available and ensure it's accessible
    */
   private async checkCursorAgentAvailable(): Promise<boolean> {
+    console.log("🔍 Checking for cursor-agent CLI...");
+    console.log("CURSOR_API_KEY set:", !!process.env.CURSOR_API_KEY);
+    console.log("Current PATH:", process.env.PATH?.split(':').slice(0, 5).join(':'));
+    
     try {
       // First check if it's in PATH
       const { stdout } = await execAsync("which cursor-agent");
       if (stdout.trim().length > 0) {
-        console.log("✅ cursor-agent found in PATH");
+        console.log("✅ cursor-agent found in PATH:", stdout.trim());
         return true;
       }
-    } catch {
-      // Not in PATH
+    } catch (e) {
+      console.log("❌ cursor-agent not in PATH");
     }
     
     // Check if cursor-agent exists in project bin directory
@@ -331,8 +344,8 @@ class CursorAgent {
         console.log("✅ cursor-agent found in project bin");
         return true;
       }
-    } catch {
-      // Project bin doesn't exist
+    } catch (e) {
+      console.log("❌ cursor-agent not in project bin");
     }
     
     // Check /tmp (for serverless environments like Vercel)
@@ -341,18 +354,20 @@ class CursorAgent {
       process.env.PATH = `/tmp:${process.env.PATH}`;
       console.log("✅ cursor-agent found in /tmp");
       return true;
-    } catch {
-      // Not in /tmp
+    } catch (e) {
+      console.log("❌ cursor-agent not in /tmp");
     }
     
     // Try to download to /tmp for serverless environments
-    console.log("⚠️ cursor-agent not found, attempting to download...");
+    console.log("⚠️ cursor-agent not found anywhere, attempting to download...");
     const tmpPath = await this.downloadCursorAgent();
     if (tmpPath) {
       process.env.PATH = `/tmp:${process.env.PATH}`;
+      console.log("✅ cursor-agent downloaded and added to PATH");
       return true;
     }
     
+    console.error("❌ All attempts to find or download cursor-agent failed");
     return false;
   }
 
