@@ -1,6 +1,6 @@
 "use server";
 
-import { queryAgent, AgentResponse } from "@/lib/agent-wrapper";
+import { queryAgent, AgentResponse } from "@/lib/agent-wrapper-new";
 
 export const sendMessage = async (message: string): Promise<AgentResponse> => {
   try {
@@ -13,7 +13,6 @@ export const sendMessage = async (message: string): Promise<AgentResponse> => {
     // Return error response
     return {
       componentType: "text",
-      data: null,
       textResponse: "Sorry, I encountered an error processing your request. Please try again.",
     };
   }

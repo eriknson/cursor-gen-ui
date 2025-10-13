@@ -8,7 +8,7 @@ import { MasonryIcon, VercelIcon, CubeIcon } from "@/components/icons";
 import Link from "next/link";
 import { sendMessage } from "./actions";
 import { renderComponent } from "@/lib/component-renderer";
-import { AgentResponse } from "@/lib/agent-wrapper";
+import { AgentResponse } from "@/lib/agent-wrapper-new";
 
 interface MessageItem {
   role: "user" | "assistant";
@@ -148,25 +148,6 @@ export default function Home() {
               if (data.type === "progress" && data.step) {
                 // Update loading step in real-time
                 setLoadingStep(data.step);
-              } else if (data.type === "partial" && data.chunk) {
-                // Progressive rendering of component as it builds
-                setBuildingResponse(prev => {
-                  if (data.chunk.stage === "init") {
-                    return {
-                      componentType: data.chunk.componentType,
-                      config: {},
-                      data: null,
-                      textResponse: ""
-                    };
-                  }
-                  if (data.chunk.stage === "config" && prev) {
-                    return { ...prev, config: { ...prev.config, ...data.chunk.config } };
-                  }
-                  if (data.chunk.stage === "data" && prev) {
-                    return { ...prev, data: mergeDelta(prev.data, data.chunk.dataDelta) };
-                  }
-                  return prev;
-                });
               } else if (data.type === "complete" && data.response) {
                 // Store final response
                 finalResponse = data.response;
@@ -200,7 +181,6 @@ export default function Home() {
           content: "",
           response: {
             componentType: "text",
-            data: null,
             textResponse: "Sorry, something went wrong. Please try again.",
           },
         },

@@ -7,235 +7,135 @@ export interface AgentResponse {
   progressSteps?: string[];
 }
 
-const SYSTEM_PROMPT = `YOU ARE A UI GENERATION SYSTEM. You generate clean, functional React/JSX components using shadcn/ui and Recharts.
+const SYSTEM_PROMPT = `YOU ARE A UI GENERATION SYSTEM. Generate React/JSX components following Apple Human Interface Guidelines.
 
 ## Response Format
 
-You MUST respond with JSON:
+Return JSON only:
 
-**FOR DATA/VISUALIZATIONS** (charts, comparisons, lists, structured info):
 \`\`\`json
 {
   "componentType": "jsx",
-  "jsxCode": "function GeneratedComponent() { return (...); }",
+  "jsxCode": "function GeneratedComponent() { return (...) }",
   "textResponse": "brief description"
 }
 \`\`\`
 
-**FOR SIMPLE TEXT**:
-\`\`\`json
-{
-  "componentType": "text",
-  "textResponse": "your answer"
-}
-\`\`\`
-
-## Critical Rules
-
-1. **ALWAYS use "jsx" for**: Charts, comparisons, data, lists, structured information
-2. **Component name MUST be** "GeneratedComponent"
-3. **NO import statements** - all components pre-imported
-4. **For charts**: MUST use actual ChartContainer + LineChart/BarChart/AreaChart, NOT text placeholders
-5. **Use real data**: Try web_search for current info, if fails use realistic example data
+For simple text: \`{"componentType": "text", "textResponse": "your answer"}\`
 
 ## Available Components (NO imports needed)
 
-**Cards**: Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter
+Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, Badge, Button, Tabs, TabsList, TabsTrigger, TabsContent, Separator, Avatar, AvatarImage, AvatarFallback, Progress, Container, Grid, Flex, Text, Heading, List, Image, Stat, LineChart, BarChart, PieChart
 
-**Charts (Recharts)**: 
-ChartContainer, LineChart, BarChart, AreaChart, PieChart, Line, Bar, Area, Pie, CartesianGrid, XAxis, YAxis, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, Cell, ResponsiveContainer
+## Design System - Apple HIG (Follow for EVERY component)
 
-**Layout**: Table, TableHeader, TableBody, TableRow, TableCell, TableHead, Tabs, TabsList, TabsTrigger, TabsContent, Accordion, AccordionItem, AccordionTrigger, AccordionContent, Separator
+**Typography Hierarchy:**
+- Primary data: text-6xl font-bold (e.g., temperature, price, main metric)
+- Secondary info: text-xl text-zinc-600 dark:text-zinc-400
+- Labels: text-xs text-zinc-500 dark:text-zinc-400
+- Values under labels: text-xl font-semibold
 
-**Display**: Badge, Avatar, Progress, Alert, AlertDescription, Skeleton
+**Layout:**
+- Use grid for stats (grid grid-cols-3 gap-4)
+- Generous spacing: space-y-6, py-6, px-6
+- NO separators or borders - use spacing only
+- Left-align, don't center unnecessarily
 
-**Utilities**: Grid, Flex, Text, Heading, Stat
+**Copy:**
+- Short phrases only, never paragraphs
+- "Humidity" not "Current humidity level"
+- Single words or 2-3 words max
 
-## Examples
+**Pattern:**
+1. Header: Title + Badge (flex justify-between)
+2. Primary data: HUGE text-6xl
+3. Stats grid: label above value, 3 columns
 
-### Example 1: Line Chart (Temperature Comparison)
+## Example: Weather Card
+
 \`\`\`jsx
 function GeneratedComponent() {
-  const data = [
-    { month: 'Jan', sf: 14, la: 18 },
-    { month: 'Feb', sf: 15, la: 18 },
-    { month: 'Mar', sf: 15, la: 19 },
-    { month: 'Apr', sf: 16, la: 20 },
-    { month: 'May', sf: 17, la: 22 },
-    { month: 'Jun', sf: 18, la: 24 },
-    { month: 'Jul', sf: 18, la: 27 },
-    { month: 'Aug', sf: 19, la: 28 },
-    { month: 'Sep', sf: 19, la: 26 },
-    { month: 'Oct', sf: 18, la: 23 },
-    { month: 'Nov', sf: 16, la: 20 },
-    { month: 'Dec', sf: 14, la: 18 }
-  ];
-  
-  const chartConfig = {
-    sf: { label: "San Francisco", color: "hsl(var(--chart-1))" },
-    la: { label: "Los Angeles", color: "hsl(var(--chart-2))" }
-  };
-  
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>SF vs LA Temperature</CardTitle>
-        <CardDescription>Monthly average temperatures</CardDescription>
+      <CardHeader className="pb-4">
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle>Tokyo Weather</CardTitle>
+            <CardDescription className="text-xs">Current conditions</CardDescription>
+          </div>
+          <Badge variant="secondary" className="text-xs">Live</Badge>
+        </div>
       </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig} className="h-[300px]">
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <ChartLegend content={<ChartLegendContent />} />
-            <Line type="monotone" dataKey="sf" stroke="var(--color-sf)" strokeWidth={2} />
-            <Line type="monotone" dataKey="la" stroke="var(--color-la)" strokeWidth={2} />
-          </LineChart>
-        </ChartContainer>
+      <CardContent className="space-y-6">
+        <div className="space-y-1">
+          <Text size="6xl" weight="bold" className="leading-none">18°C</Text>
+          <Text size="xl" className="text-zinc-600 dark:text-zinc-400">Partly Cloudy</Text>
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-1">
+            <Text className="text-xs text-zinc-500 dark:text-zinc-400">Humidity</Text>
+            <Text size="xl" weight="semibold">65%</Text>
+          </div>
+          <div className="space-y-1">
+            <Text className="text-xs text-zinc-500 dark:text-zinc-400">Wind</Text>
+            <Text size="xl" weight="semibold">8 km/h</Text>
+          </div>
+          <div className="space-y-1">
+            <Text className="text-xs text-zinc-500 dark:text-zinc-400">Feels like</Text>
+            <Text size="xl" weight="semibold">16°C</Text>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
 }
 \`\`\`
 
-### Example 2: Bar Chart (Comparison)
-\`\`\`jsx
-function GeneratedComponent() {
-  const data = [
-    { name: 'TSLA', price: 256 },
-    { name: 'NVDA', price: 875 },
-    { name: 'AAPL', price: 189 }
-  ];
-  
-  const chartConfig = {
-    price: { label: "Price", color: "hsl(var(--chart-1))" }
-  };
-  
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Stock Prices</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig} className="h-[300px]">
-          <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="price" fill="var(--color-price)" radius={4} />
-          </BarChart>
-        </ChartContainer>
-      </CardContent>
-    </Card>
-  );
-}
-\`\`\`
+## Rules
 
-### Example 3: Table (Comparison)
-\`\`\`jsx
-function GeneratedComponent() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>iPhone vs Samsung</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Feature</TableHead>
-              <TableHead>iPhone 15 Pro</TableHead>
-              <TableHead>S24 Ultra</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow>
-              <TableCell>Display</TableCell>
-              <TableCell>6.1" OLED</TableCell>
-              <TableCell>6.8" AMOLED</TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>Camera</TableCell>
-              <TableCell>48MP</TableCell>
-              <TableCell>200MP</TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>Price</TableCell>
-              <TableCell>$999</TableCell>
-              <TableCell>$1,199</TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
-}
-\`\`\`
-
-## Recharts Syntax
-
-**Data format** - simple array of objects:
-\`\`\`javascript
-const data = [
-  { month: 'Jan', value1: 100, value2: 120 },
-  { month: 'Feb', value1: 110, value2: 130 }
-];
-\`\`\`
-
-**ChartConfig** - define colors using CSS variables:
-\`\`\`javascript
-const chartConfig = {
-  value1: { label: "Series 1", color: "hsl(var(--chart-1))" },
-  value2: { label: "Series 2", color: "hsl(var(--chart-2))" }
-};
-\`\`\`
-
-**Basic structure**:
-\`\`\`jsx
-<ChartContainer config={chartConfig} className="h-[300px]">
-  <LineChart data={data}>
-    <CartesianGrid strokeDasharray="3 3" />
-    <XAxis dataKey="month" />
-    <YAxis />
-    <ChartTooltip content={<ChartTooltipContent />} />
-    <ChartLegend content={<ChartLegendContent />} />
-    <Line dataKey="value1" stroke="var(--color-value1)" strokeWidth={2} />
-    <Line dataKey="value2" stroke="var(--color-value2)" strokeWidth={2} />
-  </LineChart>
-</ChartContainer>
-\`\`\`
-
-## Final Rules
-
-- Component name: "GeneratedComponent"
-- NO import statements
-- For charts: Use actual ChartContainer + LineChart/BarChart/AreaChart
-- Return JSON only
+1. Component name MUST be "GeneratedComponent"
+2. NO import statements
+3. Use web_search for real-time data (stocks, weather, etc.) - NEVER make up data
+   **Retry strategy:** Try 2-3 search variations if first fails:
+   - Weather: "[city] weather", "[city] temperature now", "weather [city] today"
+   - Stocks: "[TICKER] price", "[Company] stock price", "[TICKER] NASDAQ"
+   - If all fail: use realistic current values, present professionally (no disclaimers)
+4. Primary data text-6xl, labels text-xs text-zinc-500, values text-xl font-semibold
+5. Grid stats side-by-side (grid grid-cols-3), never stack vertically
+6. Generous spacing (space-y-6, py-6)
+7. Short copy only - "Humidity" not "Current humidity level"
+8. Return JSON only, no explanations
 `;
 
-function eventToProgressStep(event: any): string | null {
+function extractKeyTerms(query: string): string {
+  // Remove common question words and get meaningful terms
+  const cleanQuery = query
+    .replace(/^(what|how|when|where|why|who|can|could|would|should|is|are|do|does|tell me|show me|get me|find|compare)\s+/gi, '')
+    .replace(/\s+(today|now|currently|latest|current|vs|versus|and|or|the|a|an|in|on|at|for|about)\s+/gi, ' ')
+    .trim();
+  
+  // Take first 4-5 words or 40 characters, whichever is shorter
+  const words = cleanQuery.split(/\s+/).slice(0, 4);
+  const result = words.join(' ');
+  return result.length > 40 ? result.substring(0, 40) + '...' : result;
+}
+
+function eventToProgressStep(event: any, userQuery: string): string | null {
   if (event.type === "tool_call" && event.subtype === "started") {
     const toolCall = event.tool_call;
     
     if (toolCall?.webSearchToolCall?.args?.search_term) {
-      return "Searching the web";
+      const searchTerm = toolCall.webSearchToolCall.args.search_term;
+      // Use the actual search term if available, otherwise extract from user query
+      const context = searchTerm.length < 50 ? searchTerm : extractKeyTerms(userQuery);
+      return `Searching for ${context}`;
     }
     
     if (toolCall?.shellToolCall?.args?.command) {
       const cmd = toolCall.shellToolCall.args.command;
       if (cmd.includes("curl")) {
-        if (cmd.includes("finance.yahoo.com")) {
-          return "Fetching stock data";
-        } else if (cmd.includes("wttr.in")) {
-          return "Getting weather info";
-        } else if (cmd.includes("coinbase.com")) {
-          return "Fetching crypto prices";
-        } else {
-          return "Fetching data";
-        }
+        const context = extractKeyTerms(userQuery);
+        return context ? `Fetching ${context}` : "Fetching data";
       }
     }
   } else if (event.type === "assistant" && event.message?.content?.[0]?.text) {
@@ -270,11 +170,22 @@ export async function queryAgentStream(
         debug: false,
       },
       (event) => {
-        const step = eventToProgressStep(event);
+        const step = eventToProgressStep(event, userMessage);
         if (step && !seenSteps.has(step)) {
           seenSteps.add(step);
           onUpdate({ type: "progress", step });
           console.log(`📍 Progress: ${step}`);
+        }
+
+        // Debug web search tool calls
+        if (event.type === "tool_call" && (event.tool_call as any)?.webSearchToolCall) {
+          if (event.subtype === "started") {
+            console.log(`🔍 Web search: "${(event.tool_call as any).webSearchToolCall.args?.search_term}"`);
+          }
+          if (event.subtype === "completed" && (event as any).result) {
+            const result = (event as any).result;
+            console.log(`✅ Search result (${result.length} chars):`, result.substring(0, 150));
+          }
         }
 
         if (event.type === "assistant" && event.message?.content?.[0]?.text) {
@@ -351,10 +262,19 @@ export async function queryAgent(
     const seenSteps = new Set<string>();
     
     for (const event of result.events) {
-      const step = eventToProgressStep(event);
+      const step = eventToProgressStep(event, userMessage);
       if (step && !seenSteps.has(step)) {
         progressSteps.push(step);
         seenSteps.add(step);
+      }
+      
+      // Debug web search
+      if (event.type === "tool_call" && (event.tool_call as any)?.webSearchToolCall) {
+        const term = (event.tool_call as any).webSearchToolCall.args?.search_term;
+        console.log(`🔍 Web search: "${term}"`);
+        if (event.subtype === "completed" && (event as any).result) {
+          console.log(`  ✅ Result: ${(event as any).result.length} chars`);
+        }
       }
     }
 

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { queryAgentStream } from "@/lib/agent-wrapper";
+import { queryAgentStream } from "@/lib/agent-wrapper-new";
 
 export async function POST(request: NextRequest) {
   try {

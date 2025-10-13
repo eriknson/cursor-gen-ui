@@ -177,15 +177,25 @@ export function validateAgentResponse(response: any): ValidationResult {
     return { valid: false, error: 'componentType is required and must be a string' };
   }
 
+  const validComponentTypes = ['jsx', 'text'];
+  if (!validComponentTypes.includes(response.componentType)) {
+    return { valid: false, error: `componentType must be one of: ${validComponentTypes.join(', ')}` };
+  }
+
   if (response.textResponse !== undefined && typeof response.textResponse !== 'string') {
     return { valid: false, error: 'textResponse must be a string' };
   }
 
-  // Validate config if present
-  if (response.config) {
-    const configValidation = validateComponentConfig(response.config);
-    if (!configValidation.valid) {
-      return configValidation;
+  // If componentType is jsx, validate jsxCode
+  if (response.componentType === 'jsx') {
+    if (!response.jsxCode || typeof response.jsxCode !== 'string') {
+      return { valid: false, error: 'jsxCode is required when componentType is jsx' };
+    }
+
+    // Sanitize the JSX code
+    const sanitization = sanitizeComponentCode(response.jsxCode);
+    if (!sanitization.valid) {
+      return sanitization;
     }
   }
 
