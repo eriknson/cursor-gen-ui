@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "prebuild": "bash scripts/install-cursor-agent.sh || true",
-    "build": "next build",
+    "build": "next build && ([ -d bin ] && mkdir -p .vercel_build_output/bin && cp -r bin/* .vercel_build_output/bin/ || echo 'No bin to copy')",
     "start": "next start",
     "lint": "next lint"
   },

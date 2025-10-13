@@ -19,38 +19,46 @@ else
     # Download and install cursor-agent
     curl -fsS https://cursor.com/install | bash
     
-    # Check all possible locations for cursor-agent binary
-    BINARY_FOUND=false
+    # Find cursor-agent installation directory
+    CURSOR_DIR=""
     
-    # Check ~/.local/bin (default install location)
-    if [ -f "$HOME/.local/bin/cursor-agent" ]; then
+    # Check ~/.local/bin (default install location - usually a symlink)
+    if [ -L "$HOME/.local/bin/cursor-agent" ]; then
+        echo "✅ Found cursor-agent symlink in ~/.local/bin"
+        CURSOR_DIR="$(dirname "$(readlink "$HOME/.local/bin/cursor-agent")")"
+        echo "Resolves to: $CURSOR_DIR"
+    elif [ -f "$HOME/.local/bin/cursor-agent" ]; then
         echo "✅ Found cursor-agent in ~/.local/bin"
-        cp "$HOME/.local/bin/cursor-agent" ./bin/cursor-agent
-        chmod +x ./bin/cursor-agent
-        BINARY_FOUND=true
-    # Check ~/.cursor/bin (alternative location)
+        CURSOR_DIR="$HOME/.local/bin"
+    # Check ~/.cursor/bin
     elif [ -f "$HOME/.cursor/bin/cursor-agent" ]; then
         echo "✅ Found cursor-agent in ~/.cursor/bin"
-        cp "$HOME/.cursor/bin/cursor-agent" ./bin/cursor-agent
-        chmod +x ./bin/cursor-agent
-        BINARY_FOUND=true
+        CURSOR_DIR="$HOME/.cursor/bin"
     # Check /usr/local/bin
     elif [ -f "/usr/local/bin/cursor-agent" ]; then
         echo "✅ Found cursor-agent in /usr/local/bin"
-        cp "/usr/local/bin/cursor-agent" ./bin/cursor-agent
-        chmod +x ./bin/cursor-agent
-        BINARY_FOUND=true
+        CURSOR_DIR="/usr/local/bin"
     fi
     
-    if [ "$BINARY_FOUND" = true ]; then
-        echo "✅ cursor-agent copied to project bin"
-        ls -lh ./bin/cursor-agent
+    if [ -n "$CURSOR_DIR" ] && [ -d "$CURSOR_DIR" ]; then
+        echo "📦 Copying entire cursor-agent directory to ./bin/"
+        
+        # Copy all required files
+        cp "$CURSOR_DIR/cursor-agent" ./bin/ 2>/dev/null || true
+        cp "$CURSOR_DIR/node" ./bin/ 2>/dev/null || true
+        cp "$CURSOR_DIR/index.js" ./bin/ 2>/dev/null || true
+        cp "$CURSOR_DIR"/*.node ./bin/ 2>/dev/null || true
+        cp "$CURSOR_DIR/package.json" ./bin/ 2>/dev/null || true
+        cp "$CURSOR_DIR/rg" ./bin/ 2>/dev/null || true
+        cp "$CURSOR_DIR/spawn-helper" ./bin/ 2>/dev/null || true
+        
+        chmod +x ./bin/cursor-agent ./bin/node 2>/dev/null || true
+        chmod +x ./bin/rg ./bin/spawn-helper 2>/dev/null || true
+        
+        echo "✅ cursor-agent installation copied to project bin"
+        ls -lh ./bin/ | head -15
     else
-        echo "⚠️ Could not find cursor-agent binary in any location"
-        echo "Checked locations:"
-        echo "  - $HOME/.local/bin/cursor-agent"
-        echo "  - $HOME/.cursor/bin/cursor-agent"
-        echo "  - /usr/local/bin/cursor-agent"
+        echo "⚠️ Could not find cursor-agent installation directory"
         echo "The app will require CURSOR_API_KEY to be set"
     fi
 fi

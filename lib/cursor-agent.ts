@@ -293,25 +293,44 @@ class CursorAgent {
       console.log("📦 Downloading cursor-agent to /tmp...");
       console.log("Environment: Vercel =", process.env.VERCEL, "NODE_ENV =", process.env.NODE_ENV);
       
-      // Download the install script and run it
+      // Download the install script and run it, then copy entire installation
       const { stdout, stderr } = await execAsync(`
+        mkdir -p /tmp/cursor-agent-install &&
         curl -fsS https://cursor.com/install | bash 2>&1 &&
         (
-          if [ -f ~/.local/bin/cursor-agent ]; then
+          # Find cursor-agent directory
+          if [ -L ~/.local/bin/cursor-agent ]; then
+            CURSOR_DIR="$(dirname "$(readlink ~/.local/bin/cursor-agent)")"
+            echo "Found symlink, resolves to: $CURSOR_DIR"
+          elif [ -f ~/.local/bin/cursor-agent ]; then
+            CURSOR_DIR=~/.local/bin
             echo "Found in ~/.local/bin"
-            cp ~/.local/bin/cursor-agent ${tmpPath}
           elif [ -f ~/.cursor/bin/cursor-agent ]; then
+            CURSOR_DIR=~/.cursor/bin
             echo "Found in ~/.cursor/bin"
-            cp ~/.cursor/bin/cursor-agent ${tmpPath}
-          elif [ -f /usr/local/bin/cursor-agent ]; then
-            echo "Found in /usr/local/bin"
-            cp /usr/local/bin/cursor-agent ${tmpPath}
           else
-            echo "Binary not found in any location"
+            echo "cursor-agent not found"
             exit 1
           fi
-        ) &&
-        chmod +x ${tmpPath}
+          
+          # Copy all necessary files
+          cp "$CURSOR_DIR/cursor-agent" /tmp/cursor-agent-install/ &&
+          cp "$CURSOR_DIR/node" /tmp/cursor-agent-install/ &&
+          cp "$CURSOR_DIR/index.js" /tmp/cursor-agent-install/ &&
+          cp "$CURSOR_DIR"/*.node /tmp/cursor-agent-install/ 2>/dev/null || true &&
+          cp "$CURSOR_DIR/package.json" /tmp/cursor-agent-install/ 2>/dev/null || true &&
+          cp "$CURSOR_DIR/rg" /tmp/cursor-agent-install/ 2>/dev/null || true &&
+          
+          chmod +x /tmp/cursor-agent-install/cursor-agent /tmp/cursor-agent-install/node &&
+          
+          # Create wrapper script that points to the install directory
+          echo '#!/bin/bash' > ${tmpPath} &&
+          echo 'exec /tmp/cursor-agent-install/node /tmp/cursor-agent-install/index.js "$@"' >> ${tmpPath} &&
+          chmod +x ${tmpPath} &&
+          
+          echo "Installation complete"
+          ls -lh /tmp/cursor-agent-install/
+        )
       `);
       
       console.log("Download stdout:", stdout);
