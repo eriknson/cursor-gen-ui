@@ -1,27 +1,31 @@
 #!/bin/bash
-# Script to install cursor-agent CLI for local development
-# Note: Vercel deployment uses runtime download, not build-time installation
+# Script to install cursor-agent CLI during build (for Railway/production)
 
-echo "📦 Checking cursor-agent CLI for local development..."
+echo "📦 Installing cursor-agent CLI..."
 
-# Check if we're in Vercel build environment
-if [ "$VERCEL" = "1" ]; then
-    echo "✅ Vercel build detected - cursor-agent will be downloaded at runtime"
-    echo "Skipping build-time installation"
+# Check if cursor-agent is already installed
+if command -v cursor-agent &> /dev/null; then
+    echo "✅ cursor-agent already installed"
+    cursor-agent --version 2>/dev/null || echo "(version check skipped)"
     exit 0
 fi
 
-# Local development installation
+# Install cursor-agent
+echo "Installing cursor-agent from https://cursor.com/install..."
+curl -fsS https://cursor.com/install | bash
+
+# Add to PATH for current session
+export PATH="$HOME/.local/bin:$PATH"
+
+# Verify installation
 if command -v cursor-agent &> /dev/null; then
-    echo "✅ cursor-agent already installed"
-    cursor-agent --version || echo "(version check skipped)"
+    echo "✅ cursor-agent installed successfully"
+    cursor-agent --version 2>/dev/null || echo "Installation complete"
 else
-    echo "⚠️ cursor-agent not found"
-    echo "Install it by running: curl -fsS https://cursor.com/install | bash"
-    echo "Then restart your terminal"
-    echo ""
-    echo "For now, continuing build without cursor-agent..."
-    echo "The app will work in production via runtime download"
+    echo "⚠️ cursor-agent installation may have issues"
+    echo "Checking if binary exists..."
+    ls -la ~/.local/bin/cursor-agent 2>/dev/null || echo "Binary not found in ~/.local/bin"
+    echo "The app will still work if CURSOR_API_KEY is set"
 fi
 
 exit 0

@@ -2,7 +2,7 @@
 
 Generate UI components tailored to your questions. Built with Cursor Agent CLI.
 
-## Setup
+## Local Development
 
 ```bash
 # Install Cursor CLI
@@ -40,29 +40,34 @@ cp env.local.example .env.local
 
 This sets `NEXT_PUBLIC_ALLOWED_MODELS` to include all models. The file is gitignored.
 
-### Vercel Deployment
+### Railway Deployment (Recommended)
 
-Set in your Vercel dashboard:
-- `CURSOR_API_KEY` - Required
-- `CURSOR_MODEL` - Optional (defaults to `cheetah`)
+Railway provides a full Linux environment where cursor-agent works perfectly.
 
-Don't set `NEXT_PUBLIC_ALLOWED_MODELS` in production - it defaults to `auto,cheetah` to keep costs down. Override per-request with URL params if needed.
+#### Quick Deploy
 
-#### Deploy Steps
-
-1. Push code to GitHub/GitLab/Bitbucket
-2. Import to Vercel
-3. Add `CURSOR_API_KEY` environment variable
-4. Deploy
+1. **Push to GitHub** (if not already)
+2. **Go to [railway.app](https://railway.app)** and sign up/login
+3. **New Project** → Deploy from GitHub repo → Select `cursor-gen-ui`
+4. **Add Environment Variables**:
+   - `CURSOR_API_KEY` (required - from `cursor-agent login`)
+   - `CURSOR_MODEL=cheetah` (optional)
+   - `NEXT_PUBLIC_ALLOWED_MODELS=auto,cheetah,gpt-5,sonnet-4.5` (optional)
+5. **Deploy** - Railway auto-detects Next.js and builds
 
 Or via CLI:
 ```bash
-npm i -g vercel
-vercel login
-vercel
-vercel env add CURSOR_API_KEY
-vercel --prod
+npm install -g @railway/cli
+railway login
+railway init
+railway up
 ```
+
+**Why Railway?**
+- ✅ Full Linux environment (cursor-agent works normally)
+- ✅ No Lambda restrictions
+- ✅ All system tools available
+- ✅ Simpler deployment
 
 ## Environment Variables
 
@@ -74,9 +79,10 @@ vercel --prod
 
 ## Troubleshooting
 
-- **Command not found**: Restart terminal
+- **Command not found**: Restart terminal after installing cursor-agent
 - **Not authenticated**: Run `cursor-agent login`
-- **Deployment fails**: Check `CURSOR_API_KEY` is set in Vercel
+- **Deployment fails**: Check `CURSOR_API_KEY` is set in Railway environment variables
+- **Local dev works but deployment doesn't**: Ensure prebuild script ran successfully in build logs
 
 ## License
 
