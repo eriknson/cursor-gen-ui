@@ -15,16 +15,16 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 
-// Monochrome color palette
+// Monochrome color palette - using actual color values that work in both light and dark modes
 const MONOCHROME_COLORS = [
-  "hsl(var(--foreground))",        // Primary black/dark
-  "hsl(var(--muted-foreground))",  // Secondary grey
-  "hsl(var(--muted))",             // Light grey
-  "hsl(var(--border))",            // Border grey
-  "hsl(var(--secondary))",         // Secondary background
-  "hsl(var(--accent))",            // Accent grey
-  "hsl(var(--card-foreground))",    // Card text
-  "hsl(var(--popover-foreground))", // Popover text
+  "#1E1E1E",  // Primary dark
+  "#6B6B6B",  // Secondary grey
+  "#A8A8A8",  // Light grey
+  "#8B8B8B",  // Medium grey
+  "#707070",  // Another grey
+  "#959595",  // Light medium grey
+  "#5A5A5A",  // Dark grey
+  "#ABABAB",  // Very light grey
 ];
 
 interface DataPoint {
@@ -82,7 +82,7 @@ export const PieChart = ({ data, config = {} }: PieChartProps) => {
         )}
         <CardContent className={title ? "p-4" : "p-4 pt-6"}>
           <div className="w-full h-[280px]">
-            <ChartContainer config={chartConfig} className="h-full w-full">
+            <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
               <RechartsPieChart>
                 <Pie
                   data={chartData}

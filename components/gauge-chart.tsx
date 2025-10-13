@@ -100,7 +100,7 @@ export const GaugeChart = ({ data, config = {} }: GaugeChartProps) => {
         <CardContent className="p-4">
           <div className="relative">
             <div className="w-full h-[240px]">
-              <ChartContainer config={chartConfig} className="h-full w-full">
+              <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
                 <RadialBarChart
                   cx="50%"
                   cy={variant === "semi" ? "80%" : "50%"}

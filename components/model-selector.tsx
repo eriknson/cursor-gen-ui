@@ -44,7 +44,7 @@ export function ModelSelector({ selectedModel, onModelChange, disabled }: ModelS
         value={selectedModel}
         onChange={handleChange}
         disabled={disabled}
-        className="appearance-none bg-muted/40 hover:bg-muted/60 transition-colors rounded-full pl-2.5 sm:pl-3 pr-7 sm:pr-8 py-1 sm:py-1.5 text-xs sm:text-sm text-foreground border-0 outline-none disabled:opacity-50 cursor-pointer max-w-[140px] sm:max-w-none"
+        className="appearance-none bg-muted/40 hover:bg-muted/60 transition-colors rounded-full pl-2.5 sm:pl-3 pr-7 sm:pr-8 py-1 sm:py-1.5 text-xs sm:text-sm text-muted-foreground border-0 outline-none disabled:opacity-50 cursor-pointer max-w-[140px] sm:max-w-none"
       >
         {MODELS.map((model) => (
           <option key={model.value} value={model.value}>

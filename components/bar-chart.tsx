@@ -19,16 +19,16 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 
-// Monochrome color palette
+// Monochrome color palette - using actual color values that work in both light and dark modes
 const MONOCHROME_COLORS = [
-  "hsl(var(--foreground))",        // Primary black/dark
-  "hsl(var(--muted-foreground))",  // Secondary grey
-  "hsl(var(--muted))",             // Light grey
-  "hsl(var(--border))",            // Border grey
-  "hsl(var(--secondary))",         // Secondary background
-  "hsl(var(--accent))",            // Accent grey
-  "hsl(var(--card-foreground))",    // Card text
-  "hsl(var(--popover-foreground))", // Popover text
+  "#1E1E1E",  // Primary dark
+  "#6B6B6B",  // Secondary grey
+  "#A8A8A8",  // Light grey
+  "#8B8B8B",  // Medium grey
+  "#707070",  // Another grey
+  "#959595",  // Light medium grey
+  "#5A5A5A",  // Dark grey
+  "#ABABAB",  // Very light grey
 ];
 
 interface DataPoint {
@@ -117,6 +117,16 @@ export const BarChart = ({ data, config = {} }: BarChartProps) => {
   const showLegend = config.showLegend ?? (isMultiDataset && Object.keys(chartConfig).length > 1);
   const title = config.title || (isMultiDataset && chartData.length > 0 ? chartConfig[Object.keys(chartConfig)[0]]?.label : null);
   
+  // Temporary debug - check actual data
+  if (chartData.length > 0) {
+    console.log('=== BAR CHART DEBUG ===');
+    console.log('Raw data:', data);
+    console.log('Chart data:', chartData);
+    console.log('Chart config:', chartConfig);
+    console.log('Config keys:', Object.keys(chartConfig));
+    console.log('First data point:', chartData[0]);
+  }
+  
   return (
     <motion.div
       className="md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full pb-6"
@@ -132,37 +142,62 @@ export const BarChart = ({ data, config = {} }: BarChartProps) => {
         )}
         <CardContent className={title ? "p-4" : "p-4 pt-6"}>
           <div className="w-full h-[280px]">
-            <ChartContainer config={chartConfig} className="h-full w-full">
+            <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
               <RechartsBarChart 
                 data={chartData}
                 layout={variant === "horizontal" ? "horizontal" : "vertical"}
                 margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
+                barSize={60}
               >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey={variant === "horizontal" ? "value" : "name"}
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  fontSize={12}
-                />
-                <YAxis 
-                  dataKey={variant === "horizontal" ? "name" : "value"}
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  fontSize={12}
-                />
+                {variant === "horizontal" ? (
+                  <>
+                    <XAxis 
+                      type="number"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      fontSize={12}
+                    />
+                    <YAxis 
+                      type="category"
+                      dataKey="name"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      fontSize={12}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <XAxis 
+                      type="category"
+                      dataKey="name"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      fontSize={12}
+                    />
+                    <YAxis 
+                      type="number"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      fontSize={12}
+                    />
+                  </>
+                )}
                 <ChartTooltip content={<ChartTooltipContent />} />
                 {showLegend && <ChartLegend content={<ChartLegendContent />} />}
-                {Object.keys(chartConfig).map((key, index) => {
-                  const color = chartConfig[key]?.color || MONOCHROME_COLORS[index % MONOCHROME_COLORS.length];
+                {Object.keys(chartConfig).map((key) => {
+                  const itemColor = chartConfig[key]?.color;
                   return (
                     <Bar
                       key={key}
                       dataKey={key}
-                      fill={color}
+                      fill={itemColor || `var(--color-${key})`}
                       stackId={grouping === "stacked" ? "stack" : undefined}
+                      radius={[4, 4, 0, 0]}
                     />
                   );
                 })}
