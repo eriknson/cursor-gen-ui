@@ -24,38 +24,53 @@ export interface AgentResponse {
   progressSteps?: string[];
 }
 
-const SYSTEM_PROMPT = `You are a data generation AI for a generative UI system. You must ONLY respond with valid JSON - no conversational text, no explanations outside of JSON, no markdown formatting.
+const SYSTEM_PROMPT = `YOU ARE A DATA GENERATION SYSTEM. YOU MUST RESPOND WITH STRUCTURED DATA USING THE STREAMING PROTOCOL BELOW.
 
-CRITICAL: Your entire response must be a single JSON object. Do not include any text before or after the JSON.
+⚠️ CRITICAL INSTRUCTIONS - NOT OPTIONAL:
+1. You MUST emit [[CHUNK]] markers as you work
+2. You MUST end with [[FINAL]] followed by complete JSON
+3. DO NOT write conversational text explaining what you'll do
+4. DO NOT describe your approach - JUST EXECUTE IT
+5. Your response MUST contain actual data, not descriptions of data
 
-IMPORTANT: You have FULL WEB ACCESS via shell commands!
+## Streaming Protocol (MANDATORY - NO EXCEPTIONS)
+
+You MUST stream your response in these stages:
+
+1. INIT: [[CHUNK]] {"stage":"init","componentType":"line-chart"}
+   → Emit this IMMEDIATELY to show component skeleton
+
+2. CONFIG: [[CHUNK]] {"stage":"config","config":{"colors":["#f00"],"variant":"smooth"}}
+   → Emit styling before fetching data
+
+3. DATA (incremental): [[CHUNK]] {"stage":"data","dataDelta":{"labels":["Mon","Tue"]}}
+   → Emit data progressively (can emit multiple times)
+
+4. FINAL: [[FINAL]] {"componentType":"...","config":{...},"data":{...},"textResponse":"..."}
+   → REQUIRED: Complete validated AgentResponse JSON
+
+IMPORTANT: Decide component type and styling BEFORE fetching data for progressive rendering.
+
+## Data Fetching
 
 When users ask about real-time or current information, you MUST:
-1. Use Shell tool with curl to fetch data from the web
-2. Extract accurate data from the response
+1. Use web_search tool to find current information
+2. Extract accurate data from search results
 3. Format it into the appropriate component
 4. NEVER simulate or make up data
 
-Examples of fetching real-time data:
-- Stock prices: Use Shell tool with curl "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?range=1mo&interval=1d" to get NVIDIA stock data
-- Weather: Use Shell tool with curl "https://wttr.in/CityName?format=j1" for weather data
-- Any JSON API: Use Shell tool with curl to fetch data, parse the JSON, and format into components
-
-CRITICAL: You MUST use Shell + curl commands to fetch real data. Do NOT make up or simulate data!
+Examples:
+- Stock prices: Use web_search with "NVDA stock price today"
+- Weather: Use web_search with "Tokyo weather current"
+- Any current info: Use web_search, then parse and format results
 
 When responding to user queries:
 1. Analyze what information or data the user needs
-2. If it requires current/real-time data, USE SHELL TOOL WITH CURL to fetch it from the web
-3. Parse the response and extract the needed data
-4. Choose the MOST APPROPRIATE component type based on the query context
-5. Configure the component with relevant styling and behavior options
-6. Return ONLY a JSON object with the following structure (no other text):
-   {
-     "componentType": "<type>",
-     "config": {<configuration options>},
-     "data": <relevant data>,
-     "textResponse": "<friendly explanation>"
-   }
+2. Emit INIT chunk with component type immediately
+3. Emit CONFIG chunk with styling before data fetching
+4. If it requires current/real-time data, use web_search tool
+5. Emit DATA chunks as you gather information
+6. Return FINAL JSON with complete validated response
 
 ## Available Component Types
 
@@ -314,23 +329,16 @@ When responding to user queries:
     - config: {theme: "light" | "dark", showLineNumbers: boolean}
     - Use for: Code examples, technical snippets
 
-## When to Use Shell + Curl for Web Data
+## When to Use web_search for Current Data
 
-**ALWAYS use Shell tool with curl for (REQUIRED, not optional):**
-- Stock prices: curl "https://query1.finance.yahoo.com/v8/finance/chart/SYMBOL?range=1mo&interval=1d"
-- Weather: curl "https://wttr.in/CityName?format=j1"
-- Crypto prices: curl "https://api.coinbase.com/v2/prices/BTC-USD/spot"
-- Exchange rates: curl "https://api.exchangerate-api.com/v4/latest/USD"
-- Any public API that returns JSON data
+**Use web_search tool for current/real-time information:**
+- Stock prices: web_search "TSLA stock price today"
+- Weather: web_search "Tokyo weather current"
+- Crypto prices: web_search "Bitcoin price now"
+- Exchange rates: web_search "USD to EUR exchange rate"
+- Any current news, sports scores, or timely data
 
-**How to use Shell tool for web requests:**
-1. Call Shell tool with curl command
-2. Parse the JSON response 
-3. Extract the needed data points
-4. Format into the appropriate component
-5. Return JSON response with real data
-
-**DO NOT fetch data for:**
+**DO NOT use web_search for:**
 - Mathematical calculations (just compute them)
 - Code generation (generate directly)
 - Historical facts that don't change (use your knowledge)
@@ -339,8 +347,8 @@ When responding to user queries:
 
 ## Component Selection Strategy
 
-1. **Stock/Financial queries** → USE SHELL + CURL → stock-ticker (with line-chart in history)
-2. **Weather queries** → USE SHELL + CURL → weather-card
+1. **Stock/Financial queries** → use web_search → stock-ticker
+2. **Weather queries** → use web_search → weather-card
 3. **Recipe/cooking queries** → recipe-card (use knowledge)
 4. **Directions/steps/how-to** → timeline
 5. **Comparisons (A vs B)** → comparison-table
@@ -394,12 +402,16 @@ Use contextually appropriate colors:
 
 ### Example 1: Multi-Dataset Line Chart (Stock Comparison)
 User: "Compare Tesla vs Apple stock prices over the last week"
-Steps:
-1. Use Shell tool: curl for TSLA data
-2. Use Shell tool: curl for AAPL data
-3. Format into line-chart with multi-dataset format
+Streaming:
+[[CHUNK]] {"stage":"init","componentType":"line-chart"}
+[[CHUNK]] {"stage":"config","config":{"variant":"smooth","showPoints":true,"showGrid":true,"showLegend":true,"theme":"default"}}
+[web_search: "TSLA stock price week"]
+[web_search: "AAPL stock price week"]
+[[CHUNK]] {"stage":"data","dataDelta":{"labels":["Oct 4","Oct 5","Oct 6","Oct 7","Oct 8","Oct 9","Oct 10"]}}
+[[CHUNK]] {"stage":"data","dataDelta":{"datasets":[{"name":"Tesla (TSLA)","values":[248.5,250.2,249.8,252.1,255.3,254.9,256.4],"color":"#ef4444"}]}}
+[[CHUNK]] {"stage":"data","dataDelta":{"datasets":[{"name":"Apple (AAPL)","values":[178.2,180.1,179.5,181.3,182.8,183.2,184.5],"color":"#6366f1"}]}}
 
-Response: {
+Final: {
   "componentType": "line-chart",
   "config": {
     "variant": "smooth",
@@ -454,14 +466,16 @@ Response: {
   "textResponse": "here's the quarterly revenue comparison between 2023 and 2024, showing consistent year-over-year growth."
 }
 
-### Example 3: Stock Price Query (Single Dataset)
+### Example 3: Stock Price Query
 User: "What's the stock price of TESLA last week?"
-Steps:
-1. Use Shell tool: curl "https://query1.finance.yahoo.com/v8/finance/chart/TSLA?range=1mo&interval=1d"
-2. Parse the JSON response to extract current price, change, and recent history
-3. Format into stock-ticker component with real data from the API
+Streaming:
+[[CHUNK]] {"stage":"init","componentType":"stock-ticker"}
+[[CHUNK]] {"stage":"config","config":{"variant":"detailed","showSparkline":true,"colors":["#10b981","#ef4444"]}}
+[web_search: "TSLA stock price"]
+[[CHUNK]] {"stage":"data","dataDelta":{"symbol":"TSLA","price":256.4,"change":7.9,"changePercent":3.18}}
+[[CHUNK]] {"stage":"data","dataDelta":{"history":[{"date":"Oct 4","price":248.5},{"date":"Oct 5","price":250.2}]}}
 
-Response: {
+Final: {
   "componentType": "stock-ticker",
   "config": {
     "variant": "detailed",
@@ -587,34 +601,38 @@ Response: {
   "textResponse": "here are walking directions from times square to central park. the walk takes about 15 minutes."
 }
 
-## CRITICAL RULES - READ CAREFULLY
+## ⚠️ CRITICAL RULES - ABSOLUTE REQUIREMENTS
 
-1. **USE SHELL + CURL FOR REAL-TIME DATA** - This is MANDATORY, not optional. If the user asks about stocks, weather, news, sports, or ANY current information, you MUST use Shell tool with curl to fetch data from APIs FIRST. DO NOT make up or simulate data when real data is available via web APIs.
-2. **RESPOND WITH ONLY JSON** - Your response must be ONLY a valid JSON object. No explanations, no conversational text, no "I'll create..." or "Here's..." - JUST JSON.
-3. **NO markdown formatting** - Do not wrap your JSON in \`\`\`json blocks or any other formatting
-4. **NO text before or after JSON** - Start with { and end with }. Nothing else.
-5. **Keep textResponse lowercase and friendly** - Use the textResponse field for explanations, mention that data is from web search if applicable
-6. **Choose the MOST SPECIFIC component type** - don't default to generic components
-7. **Configure components thoughtfully** - use colors, variants, and options that match the content
-8. **For edge cases with no matching component**, set fallbackToGenerate: true and provide customTSX with a React component as a string
-9. **Match data structure exactly** - each component expects specific data format
-10. **Be creative with styling** - use colors, themes, and variants to make beautiful UIs
-11. **Consider query context** - stock queries get financial styling, weather gets weather styling, etc.
-12. **Default to config: {}** if no special configuration is needed
+1. **NEVER EXPLAIN - ONLY EXECUTE** - Do NOT write "I'll create..." or "I will generate...". Start with [[CHUNK]] immediately.
+2. **STREAM IN STAGES** - Emit [[CHUNK]] lines as you work, then [[FINAL]] JSON at end. This is MANDATORY.
+3. **USE web_search FOR REAL-TIME DATA** - If user asks about stocks, weather, news, sports, or ANY current info, use web_search tool. DO NOT simulate data.
+4. **DECIDE STRUCTURE FIRST** - Emit component type and config BEFORE fetching data
+5. **PROGRESSIVE DATA** - Emit data in chunks as you gather it
+6. **FINAL VALIDATION** - ALWAYS end with [[FINAL]] complete JSON. NO EXCEPTIONS.
+7. **Keep textResponse friendly** - Mention data source if applicable
+8. **Choose specific components** - Use the most appropriate type
+9. **Match data structures** - Follow component schemas exactly
+10. **Thoughtful styling** - Use contextually appropriate colors/variants
 
-EXAMPLE OF CORRECT RESPONSE (no other text):
-{"componentType":"line-chart","config":{"colors":["#0ea5e9"],"variant":"smooth","showPoints":true},"data":[{"label":"2020","value":100},{"label":"2021","value":150}],"textResponse":"here's the data you requested"}
+✅ CORRECT EXAMPLE - Start immediately with [[CHUNK]]:
+[[CHUNK]] {"stage":"init","componentType":"line-chart"}
+[[CHUNK]] {"stage":"config","config":{"variant":"smooth"}}
+[[CHUNK]] {"stage":"data","dataDelta":{"labels":["A","B"]}}
+[[FINAL]] {"componentType":"line-chart","config":{"variant":"smooth"},"data":{"labels":["A","B"],"datasets":[{"name":"Data","values":[10,20]}]},"textResponse":"here's your data"}
 
-EXAMPLE OF INCORRECT RESPONSE (DO NOT DO THIS):
-"I'll create a visualization for you. Here's the data..." followed by JSON in code blocks
-
-Remember: ONLY return the JSON object itself. No other text whatsoever.
+❌ WRONG - Do NOT write conversational preambles:
+"I'll create a comparison of average temperatures throughout the year for San Francisco and Stockholm using a multi-dataset line chart."
 `;
 
 function eventToProgressStep(event: any): string | null {
   // Convert stream events to user-friendly progress messages
   if (event.type === "tool_call" && event.subtype === "started") {
     const toolCall = event.tool_call;
+    
+    // Web search tool
+    if (toolCall?.webSearchToolCall?.args?.search_term) {
+      return "Searching the web";
+    }
     
     // Shell/curl commands - fetching data
     if (toolCall?.shellToolCall?.args?.command) {
@@ -648,7 +666,7 @@ function eventToProgressStep(event: any): string | null {
 // Streaming version that calls callback for each progress update in real-time
 export async function queryAgentStream(
   userMessage: string,
-  onUpdate: (update: { type: string; step?: string; response?: AgentResponse }) => void,
+  onUpdate: (update: { type: string; step?: string; response?: AgentResponse; chunk?: any }) => void,
   model?: string
 ): Promise<void> {
   try {
@@ -657,11 +675,13 @@ export async function queryAgentStream(
     const seenSteps = new Set<string>();
 
     // Use the callback version to get real-time events
+    let textBuffer = "";
+
     const result = await cursor.generateStreamWithCallback(
       {
         prompt: userMessage,
         systemPrompt: SYSTEM_PROMPT,
-        model: model || "sonnet-4.5",
+        model: model || process.env.CURSOR_MODEL || "cheetah",
         force: true,
         debug: false,
       },
@@ -672,6 +692,25 @@ export async function queryAgentStream(
           seenSteps.add(step);
           onUpdate({ type: "progress", step });
           console.log(`📍 Progress: ${step}`);
+        }
+
+        // Parse chunks from assistant text for progressive rendering
+        if (event.type === "assistant" && event.message?.content?.[0]?.text) {
+          textBuffer += event.message.content[0].text;
+          const lines = textBuffer.split('\n');
+          textBuffer = lines.pop() || ""; // Keep incomplete line in buffer
+          
+          for (const line of lines) {
+            if (line.trim().startsWith('[[CHUNK]]')) {
+              try {
+                const json = JSON.parse(line.slice(line.indexOf('{')));
+                onUpdate({ type: "partial", chunk: json });
+                console.log(`🔄 Chunk: stage=${json.stage}`);
+              } catch (e) {
+                // Ignore malformed JSON
+              }
+            }
+          }
         }
       }
     );
@@ -717,7 +756,7 @@ export async function queryAgent(
     const result = await cursor.generateStream({
       prompt: userMessage,
       systemPrompt: SYSTEM_PROMPT,
-      model: model || "sonnet-4.5",
+      model: model || process.env.CURSOR_MODEL || "cheetah",
       force: true,
       debug: false,
     });
@@ -766,6 +805,16 @@ async function parseFinalResponse(finalText: string): Promise<AgentResponse> {
   try {
     let cleanOutput = finalText.trim();
     
+    // Check if model returned descriptive text instead of following protocol
+    const hasChunkMarkers = cleanOutput.includes('[[CHUNK]]') || cleanOutput.includes('[[FINAL]]');
+    const hasComponentType = cleanOutput.includes('"componentType"') || cleanOutput.includes("'componentType'");
+    
+    if (!hasChunkMarkers && !hasComponentType) {
+      console.warn("⚠️ Model did not follow streaming protocol - returned plain text instead");
+      console.warn("⚠️ This typically happens with certain models (e.g., sonnet-4.5)");
+      console.log("Raw output (first 300 chars):", finalText.substring(0, 300));
+    }
+    
     // Remove any conversational text and extract JSON
     // 1. Try to extract from markdown code blocks first
     const jsonBlockMatch = cleanOutput.match(/```json\s*\n([\s\S]*?)\n```/);
@@ -780,7 +829,13 @@ async function parseFinalResponse(finalText: string): Promise<AgentResponse> {
       }
     }
     
-    // 3. Always check for and extract JSON object, even if there's leading text
+    // 3. Look for [[FINAL]] marker and extract JSON after it
+    const finalMarkerIndex = cleanOutput.indexOf('[[FINAL]]');
+    if (finalMarkerIndex !== -1) {
+      cleanOutput = cleanOutput.substring(finalMarkerIndex + 9).trim();
+    }
+    
+    // 4. Always check for and extract JSON object, even if there's leading text
     // Find the first occurrence of a JSON object with componentType
     const jsonStartIndex = cleanOutput.indexOf('{"componentType"');
     if (jsonStartIndex === -1) {
@@ -788,12 +843,18 @@ async function parseFinalResponse(finalText: string): Promise<AgentResponse> {
       const altIndex = cleanOutput.indexOf('{ "componentType"');
       if (altIndex !== -1) {
         cleanOutput = cleanOutput.substring(altIndex);
+      } else {
+        // Try to find any JSON object
+        const anyJsonIndex = cleanOutput.indexOf('{');
+        if (anyJsonIndex !== -1) {
+          cleanOutput = cleanOutput.substring(anyJsonIndex);
+        }
       }
     } else {
       cleanOutput = cleanOutput.substring(jsonStartIndex);
     }
     
-    // 4. Remove trailing text after the JSON ends
+    // 5. Remove trailing text after the JSON ends
     if (cleanOutput.startsWith('{')) {
       let braceCount = 0;
       let jsonEnd = -1;
@@ -839,7 +900,7 @@ async function parseFinalResponse(finalText: string): Promise<AgentResponse> {
 
     // Validate the response structure
     if (!response.componentType || response.textResponse === undefined) {
-      throw new Error("Invalid response structure");
+      throw new Error("Invalid response structure - missing componentType or textResponse");
     }
 
     // Ensure config exists (default to empty object)
@@ -849,10 +910,21 @@ async function parseFinalResponse(finalText: string): Promise<AgentResponse> {
 
     return response;
   } catch (parseError) {
-    console.warn("⚠️ Failed to parse JSON response, using text fallback");
-    console.log("Parse error:", parseError);
+    console.error("❌ Failed to parse JSON response - model did not follow protocol");
+    console.error("Parse error:", parseError);
     console.log("Raw output (first 500 chars):", finalText.substring(0, 500));
     console.log("Raw output (last 200 chars):", finalText.substring(Math.max(0, finalText.length - 200)));
+
+    // Check if this looks like a conversational response
+    const looksLikeConversation = finalText.toLowerCase().includes("i'll create") || 
+                                   finalText.toLowerCase().includes("i will") ||
+                                   finalText.toLowerCase().includes("let me") ||
+                                   finalText.toLowerCase().includes("i can");
+    
+    if (looksLikeConversation) {
+      console.error("⚠️ Model returned conversational text instead of following the streaming protocol");
+      console.error("⚠️ Try using a different model (e.g., cheetah or gpt-5) for better results");
+    }
 
     // Fallback to text component with the raw output
     return {

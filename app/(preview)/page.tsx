@@ -16,6 +16,29 @@ interface MessageItem {
   response?: AgentResponse;
 }
 
+// Helper to merge data deltas for progressive rendering
+function mergeDelta(current: any, delta: any): any {
+  if (!current) return delta;
+  
+  // Special handling for datasets array (for charts)
+  if (typeof current === 'object' && 'datasets' in current && 
+      typeof delta === 'object' && 'datasets' in delta) {
+    return {
+      ...current,
+      ...delta,
+      datasets: [...(current.datasets || []), ...(delta.datasets || [])]
+    };
+  }
+  
+  if (Array.isArray(current) && Array.isArray(delta)) {
+    return [...current, ...delta];
+  }
+  if (typeof current === 'object' && typeof delta === 'object') {
+    return { ...current, ...delta };
+  }
+  return delta;
+}
+
 // Animated dots component
 function AnimatedDots() {
   const [dots, setDots] = useState(".");
@@ -40,6 +63,7 @@ export default function Home() {
   const [messages, setMessages] = useState<Array<MessageItem>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState<string>("Thinking");
+  const [buildingResponse, setBuildingResponse] = useState<AgentResponse | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [messagesContainerRef, messagesEndRef] =
@@ -82,13 +106,17 @@ export default function Home() {
     setInput("");
 
     try {
+      // Get model from URL parameter if present
+      const searchParams = new URLSearchParams(window.location.search);
+      const model = searchParams.get('model') || undefined;
+
       // Use fetch to get streaming updates
       const response = await fetch("/api/stream", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message: userMessage }),
+        body: JSON.stringify({ message: userMessage, model }),
       });
 
       if (!response.ok) {
@@ -120,9 +148,29 @@ export default function Home() {
               if (data.type === "progress" && data.step) {
                 // Update loading step in real-time
                 setLoadingStep(data.step);
+              } else if (data.type === "partial" && data.chunk) {
+                // Progressive rendering of component as it builds
+                setBuildingResponse(prev => {
+                  if (data.chunk.stage === "init") {
+                    return {
+                      componentType: data.chunk.componentType,
+                      config: {},
+                      data: null,
+                      textResponse: ""
+                    };
+                  }
+                  if (data.chunk.stage === "config" && prev) {
+                    return { ...prev, config: { ...prev.config, ...data.chunk.config } };
+                  }
+                  if (data.chunk.stage === "data" && prev) {
+                    return { ...prev, data: mergeDelta(prev.data, data.chunk.dataDelta) };
+                  }
+                  return prev;
+                });
               } else if (data.type === "complete" && data.response) {
                 // Store final response
                 finalResponse = data.response;
+                setBuildingResponse(null);
               } else if (data.type === "error") {
                 throw new Error(data.message);
               }
@@ -163,11 +211,11 @@ export default function Home() {
     }
   };
 
-  return (
+  return (    
     <div className="flex flex-row justify-center pb-20 h-dvh bg-white dark:bg-zinc-900">
-      <div className="flex flex-col justify-between gap-4">
+      <div className="flex flex-col justify-between gap-4">     
         <div
-          ref={messagesContainerRef}
+          ref={messagesContainerRef}        
           className="flex flex-col gap-3 h-full w-dvw items-center overflow-y-scroll"
         >
           {messages.map((message, index) => (
@@ -181,7 +229,21 @@ export default function Home() {
               }
             />
           ))}
-          {isLoading && (
+          {/* Show building component while streaming */}
+          {isLoading && buildingResponse && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Message
+                role="assistant"
+                content={renderComponent(buildingResponse)}
+              />
+            </motion.div>
+          )}
+          {/* Show loading indicator when no component yet */}
+          {isLoading && !buildingResponse && (
             <motion.div
               className="flex flex-row gap-2 px-4 w-full md:w-[500px] md:px-0"
               initial={{ opacity: 0 }}

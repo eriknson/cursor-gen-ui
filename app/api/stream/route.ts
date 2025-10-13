@@ -3,7 +3,7 @@ import { queryAgentStream } from "@/lib/agent-wrapper";
 
 export async function POST(request: NextRequest) {
   try {
-    const { message } = await request.json();
+    const { message, model } = await request.json();
 
     if (!message || typeof message !== "string") {
       return new Response("Invalid message", { status: 400 });
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
           await queryAgentStream(message, (update) => {
             const data = `data: ${JSON.stringify(update)}\n\n`;
             controller.enqueue(encoder.encode(data));
-          });
+          }, model);
 
           controller.close();
         } catch (error) {
