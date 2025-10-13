@@ -288,8 +288,9 @@ class CursorAgent {
       
       // Step 1: Download and install cursor-agent
       console.log("Step 1: Running installer...");
+      // Set HOME=/tmp so installer writes to /tmp/.local instead of read-only home
       const installResult = await execAsync(
-        `curl -fsS https://cursor.com/install | bash`,
+        `export HOME=/tmp && curl -fsS https://cursor.com/install | bash`,
         { timeout: 120000 } // 2 minute timeout for download
       );
       console.log("Installer output:", installResult.stdout.substring(0, 500));
@@ -299,10 +300,10 @@ class CursorAgent {
       let cursorDir = "";
       
       try {
-        // Check if ~/.local/bin/cursor-agent is a symlink
+        // Check if /tmp/.local/bin/cursor-agent is a symlink (since HOME=/tmp during install)
         const linkCheck = await execAsync(`
-          if [ -L ~/.local/bin/cursor-agent ]; then
-            readlink ~/.local/bin/cursor-agent
+          if [ -L /tmp/.local/bin/cursor-agent ]; then
+            readlink /tmp/.local/bin/cursor-agent
           else
             echo ""
           fi
@@ -317,9 +318,11 @@ class CursorAgent {
         console.log("Not a symlink, checking direct paths...");
       }
       
-      // Fallback to checking standard locations
+      // Fallback to checking locations (prioritize /tmp since HOME=/tmp)
       if (!cursorDir) {
         const locations = [
+          "/tmp/.local/bin",
+          "/tmp/.local/share/cursor-agent/versions",
           "~/.local/bin",
           "~/.cursor/bin",
           "/usr/local/bin"
@@ -327,10 +330,23 @@ class CursorAgent {
         
         for (const loc of locations) {
           try {
-            await execAsync(`test -f ${loc}/cursor-agent && test -f ${loc}/node && test -f ${loc}/index.js`);
-            cursorDir = loc;
-            console.log("Found cursor-agent in:", loc);
-            break;
+            // For the versions directory, we need to find the actual version subdirectory
+            if (loc.includes("versions")) {
+              const versionCheck = await execAsync(`ls -1 ${loc} 2>/dev/null | head -1`);
+              const version = versionCheck.stdout.trim();
+              if (version) {
+                const versionPath = `${loc}/${version}`;
+                await execAsync(`test -f ${versionPath}/cursor-agent && test -f ${versionPath}/node`);
+                cursorDir = versionPath;
+                console.log("Found cursor-agent in versions:", cursorDir);
+                break;
+              }
+            } else {
+              await execAsync(`test -f ${loc}/cursor-agent && test -f ${loc}/node && test -f ${loc}/index.js`);
+              cursorDir = loc;
+              console.log("Found cursor-agent in:", loc);
+              break;
+            }
           } catch (e) {
             // Try next location
           }
@@ -391,10 +407,12 @@ EOF
           echo "=== Diagnostic Info ===" &&
           echo "HOME: $HOME" &&
           echo "PATH: $PATH" &&
-          echo "~/.local/bin contents:" &&
-          ls -la ~/.local/bin/ 2>&1 || echo "Directory not found" &&
-          echo "~/.local/share/cursor-agent:" &&
-          ls -la ~/.local/share/cursor-agent/ 2>&1 || echo "Directory not found"
+          echo "Available commands:" &&
+          which tar gzip curl bash 2>&1 || echo "Some tools missing" &&
+          echo "/tmp/.local/bin contents:" &&
+          ls -la /tmp/.local/bin/ 2>&1 || echo "Directory not found" &&
+          echo "/tmp/.local/share/cursor-agent:" &&
+          ls -la /tmp/.local/share/cursor-agent/ 2>&1 || echo "Directory not found"
         `);
         console.log("Diagnostics:", diagResult.stdout);
       } catch (e) {
