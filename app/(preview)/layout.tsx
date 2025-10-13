@@ -1,6 +1,7 @@
 import "./globals.css";
 import { Metadata } from "next";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'https://cursor-gen-ui.vercel.app'),
@@ -34,6 +35,7 @@ export default function RootLayout({
       <body>
         <Toaster position="top-center" richColors />
         {children}
+        <Analytics />
       </body>
     </html>
   );
