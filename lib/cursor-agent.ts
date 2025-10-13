@@ -275,6 +275,35 @@ class CursorAgent {
   }
 
   /**
+   * Check if cursor-agent CLI is available
+   */
+  private async checkCursorAgentAvailable(): Promise<boolean> {
+    try {
+      // First check if it's in PATH
+      const { stdout } = await execAsync("which cursor-agent");
+      if (stdout.trim().length > 0) {
+        return true;
+      }
+    } catch {
+      // Not in PATH, check project bin
+    }
+    
+    // Check if cursor-agent exists in project bin directory
+    try {
+      const { stdout } = await execAsync("test -x ./bin/cursor-agent && echo 'found' || echo 'not found'");
+      if (stdout.trim() === 'found') {
+        // Add to PATH for this process
+        process.env.PATH = `${process.cwd()}/bin:${process.env.PATH}`;
+        return true;
+      }
+    } catch {
+      // Project bin doesn't exist
+    }
+    
+    return false;
+  }
+
+  /**
    * Generate with streaming support and real-time event callbacks
    */
   async generateStreamWithCallback(
@@ -286,6 +315,19 @@ class CursorAgent {
       ...options,
       outputFormat: "stream-json" as const,
     };
+
+    // Check if cursor-agent is available
+    const isAvailable = await this.checkCursorAgentAvailable();
+    if (!isAvailable) {
+      const errorMsg = "cursor-agent CLI is not installed or not in PATH. Please ensure CURSOR_API_KEY is set and cursor-agent is installed. Visit https://cursor.com/install for installation instructions.";
+      return {
+        success: false,
+        events: [],
+        finalText: "",
+        error: errorMsg,
+        duration_ms: 0,
+      };
+    }
 
     return new Promise((resolve) => {
       const events: CursorStreamEvent[] = [];
