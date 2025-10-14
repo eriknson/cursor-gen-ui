@@ -69,7 +69,7 @@ export const PieChart = ({ data, config = {} }: PieChartProps) => {
 
   return (
     <motion.div
-      className="md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full pb-6"
+      className="md:max-w-[452px] max-w-full w-full pb-6"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}

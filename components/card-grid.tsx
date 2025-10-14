@@ -17,7 +17,7 @@ export const CardGrid = ({ items }: { items: CardItem[] }) => {
   }
 
   return (
-    <div className="md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full pb-6">
+    <div className="md:max-w-[452px] max-w-full w-full pb-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {items.map((item, index) => (
           <motion.div

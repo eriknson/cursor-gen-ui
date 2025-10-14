@@ -39,7 +39,7 @@ export const MediaGrid = ({ data, config = {} }: MediaGridProps) => {
   };
 
   return (
-    <div className="md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full pb-6">
+    <div className="md:max-w-[452px] max-w-full w-full pb-6">
       <div
         className={`grid ${gridCols[columns as keyof typeof gridCols] || gridCols[2]} gap-3`}
       >

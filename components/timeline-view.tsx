@@ -69,7 +69,7 @@ export const TimelineView = ({ data, config = {} }: TimelineViewProps) => {
 
   if (orientation === "horizontal") {
     return (
-      <div className="md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full pb-6">
+      <div className="md:max-w-[452px] max-w-full w-full pb-6">
         <div className="overflow-x-auto pb-2">
           <div className="flex gap-4 min-w-max">
             {data.map((item, index) => (
@@ -122,7 +122,7 @@ export const TimelineView = ({ data, config = {} }: TimelineViewProps) => {
 
   // Vertical orientation (default)
   return (
-    <div className="md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full pb-6">
+    <div className="md:max-w-[452px] max-w-full w-full pb-6">
       <div className="relative">
         {/* Vertical line */}
         <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-border" />
