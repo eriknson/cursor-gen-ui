@@ -21,13 +21,17 @@ export function validateComponentScope(code: string): { valid: boolean; issues: 
   
   // CRITICAL: Check for helper component definitions (FORBIDDEN)
   // Patterns like: const MyComponent = () => ..., function MyComponent() { ... }
-  const helperComponentPattern = /(?:const|let|var|function)\s+([A-Z][a-zA-Z0-9]+)\s*=?\s*(?:\([^)]*\)\s*=>|function)/g;
+  // But NOT React state setters like setSomething, or regular functions like handleClick
+  const helperComponentPattern = /(?:const|let|var|function)\s+([A-Z][a-zA-Z0-9]+)\s*=\s*(?:\([^)]*\)\s*=>)/g;
   let match;
   
   while ((match = helperComponentPattern.exec(code)) !== null) {
     const componentName = match[1];
     // Allow only GeneratedComponent (the main one)
-    if (componentName !== 'GeneratedComponent') {
+    // Also ignore if it's a type/interface pattern or common non-component patterns
+    if (componentName !== 'GeneratedComponent' && 
+        !componentName.startsWith('set') &&  // Ignore setState functions that might be extracted
+        componentName.length > 2) {  // Ignore single/double letter variables
       issues.push(`FORBIDDEN: Helper component/function "${componentName}" detected. All JSX must be inline in GeneratedComponent. Do not create helper components or functions that look like components.`);
     }
   }
@@ -65,7 +69,7 @@ export function validateComponentScope(code: string): { valid: boolean; issues: 
   
   // Also check for direct function calls to components (less common but possible)
   // But be smarter about it - only flag actual component-like patterns
-  const componentCallPattern = /(?:^|[^.])([A-Z][a-zA-Z0-9]*)\s*\(/g;
+  const componentCallPattern = /(?:^|[^.\w])([A-Z][a-zA-Z0-9]*)\s*\(/g;
   while ((match = componentCallPattern.exec(code)) !== null) {
     const component = match[1];
     
@@ -79,9 +83,10 @@ export function validateComponentScope(code: string): { valid: boolean; issues: 
       continue;
     }
     
-    // Skip if it's preceded by a dot (property access like data.High() or date.toLocaleDateString())
-    const beforeMatch = code.substring(Math.max(0, match.index - 5), match.index);
-    if (beforeMatch.trim().endsWith('.') || beforeMatch.includes('.to')) {
+    // Skip if it's preceded by a dot (property access) or word character (like setState functions)
+    const beforeContext = code.substring(Math.max(0, match.index - 10), match.index);
+    if (beforeContext.trim().endsWith('.') || 
+        /(?:set|get|handle|on|use|is|has|can|should)[A-Z]/.test(beforeContext)) {
       continue;
     }
     
