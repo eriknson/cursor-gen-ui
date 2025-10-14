@@ -33,10 +33,10 @@
 
 @keyframes shimmer-text {
     0% {
-        background-position: -100% 0;
+        background-position: -150% 0;
     }
     100% {
-        background-position: 100% 0;
+        background-position: 150% 0;
     }
 }
 
@@ -50,16 +50,16 @@
 }
 
 .animate-shimmer-text {
-    animation: shimmer-text 3s linear infinite, pulse-opacity 2s ease-in-out infinite;
+    animation: shimmer-text 2.5s linear infinite, pulse-opacity 2s ease-in-out infinite;
     background: linear-gradient(
         90deg,
         hsl(var(--muted-foreground)) 0%,
-        hsl(var(--muted-foreground)) 45%,
-        rgba(255, 255, 255, 0.25) 50%,
-        hsl(var(--muted-foreground)) 55%,
+        hsl(var(--muted-foreground)) 42%,
+        rgba(255, 255, 255, 0.05) 50%,
+        hsl(var(--muted-foreground)) 58%,
         hsl(var(--muted-foreground)) 100%
     );
-    background-size: 100% 100%;
+    background-size: 150% 100%;
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;

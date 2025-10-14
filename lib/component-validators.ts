@@ -19,10 +19,38 @@ export function validateComponentScope(code: string): { valid: boolean; issues: 
   const issues: string[] = [];
   const availableComponents = getAllAvailableComponents();
   
+  // CRITICAL: Check for helper component definitions (FORBIDDEN)
+  // Patterns like: const MyComponent = () => ..., function MyComponent() { ... }
+  const helperComponentPattern = /(?:const|let|var|function)\s+([A-Z][a-zA-Z0-9]+)\s*=?\s*(?:\([^)]*\)\s*=>|function)/g;
+  let match;
+  
+  while ((match = helperComponentPattern.exec(code)) !== null) {
+    const componentName = match[1];
+    // Allow only GeneratedComponent (the main one)
+    if (componentName !== 'GeneratedComponent') {
+      issues.push(`FORBIDDEN: Helper component/function "${componentName}" detected. All JSX must be inline in GeneratedComponent. Do not create helper components or functions that look like components.`);
+    }
+  }
+  
+  // Check for React hooks usage
+  const availableHooks = ['useState', 'useEffect', 'useMemo', 'useCallback', 'useRef'];
+  const hookPattern = /\b(use[A-Z][a-zA-Z]*)\s*\(/g;
+  const usedHooks = new Set<string>();
+  
+  while ((match = hookPattern.exec(code)) !== null) {
+    usedHooks.add(match[1]);
+  }
+  
+  // Validate hooks are available
+  for (const hook of usedHooks) {
+    if (!availableHooks.includes(hook)) {
+      issues.push(`Hook "${hook}" is not available in runtime scope. Available hooks: ${availableHooks.join(', ')}`);
+    }
+  }
+  
   // Extract JSX component usage (e.g., <Card>, <Button>, etc.)
   const jsxComponentPattern = /<([A-Z][a-zA-Z0-9]*)/g;
   const usedComponents = new Set<string>();
-  let match;
   
   while ((match = jsxComponentPattern.exec(code)) !== null) {
     usedComponents.add(match[1]);
@@ -111,7 +139,6 @@ export function validateSafety(code: string): { safe: boolean; issues: string[] 
   
   if (code.includes('dangerouslySetInnerHTML')) issues.push('XSS risk');
   if (code.includes('eval(') || code.includes('Function(')) issues.push('Code injection');
-  if (code.includes('useEffect')) issues.push('No useEffect allowed');
   if (code.includes('fetch(') || code.includes('axios')) issues.push('No fetch allowed');
   if (code.includes('localStorage') || code.includes('sessionStorage')) issues.push('No storage access');
   if (code.includes('window.') || code.includes('document.')) issues.push('No DOM access');
@@ -267,6 +294,91 @@ export function validateRelevance(
     relevant: score >= 60,
     issues,
     score
+  };
+}
+
+/**
+ * Validates React Hook usage patterns to prevent common bugs
+ * Focuses on issues unique to hooks: memory leaks, infinite loops, stale closures
+ */
+export function validateHookUsage(code: string): {
+  valid: boolean;
+  issues: string[];
+  suggestions: string[];
+} {
+  const issues: string[] = [];
+  const suggestions: string[] = [];
+  
+  // Check 1: setInterval in useEffect without cleanup
+  const intervalPattern = /useEffect\s*\(\s*\(\s*\)\s*=>\s*\{[^}]*setInterval\(/g;
+  let match;
+  const foundIntervals: number[] = [];
+  
+  while ((match = intervalPattern.exec(code)) !== null) {
+    const effectStart = match.index;
+    // Look for return () => clearInterval in the same useEffect
+    const effectBlock = code.substring(effectStart, effectStart + 500);
+    if (!effectBlock.includes('clearInterval')) {
+      foundIntervals.push(effectStart);
+    }
+  }
+  
+  if (foundIntervals.length > 0) {
+    issues.push(`Found ${foundIntervals.length} setInterval() in useEffect without cleanup - will cause memory leak`);
+    suggestions.push('Add cleanup: useEffect(() => { const timer = setInterval(...); return () => clearInterval(timer); }, [...])');
+  }
+  
+  // Check 2: setTimeout in useEffect without cleanup
+  const timeoutPattern = /useEffect\s*\(\s*\(\s*\)\s*=>\s*\{[^}]*setTimeout\(/g;
+  const foundTimeouts: number[] = [];
+  
+  while ((match = timeoutPattern.exec(code)) !== null) {
+    const effectStart = match.index;
+    const effectBlock = code.substring(effectStart, effectStart + 500);
+    if (!effectBlock.includes('clearTimeout')) {
+      foundTimeouts.push(effectStart);
+    }
+  }
+  
+  if (foundTimeouts.length > 0) {
+    issues.push(`Found ${foundTimeouts.length} setTimeout() in useEffect without cleanup - may cause bugs on unmount`);
+    suggestions.push('Add cleanup: useEffect(() => { const timer = setTimeout(...); return () => clearTimeout(timer); }, [...])');
+  }
+  
+  // Check 3: useEffect without dependency array (infinite loop risk)
+  const effectNoDepsPattern = /useEffect\s*\(\s*\(\s*\)\s*=>\s*\{[^}]+\}\s*\)/g;
+  const foundNoDeps: number[] = [];
+  
+  while ((match = effectNoDepsPattern.exec(code)) !== null) {
+    // Check if there's a comma and array after the closing brace
+    const afterEffect = code.substring(match.index + match[0].length, match.index + match[0].length + 20);
+    if (!afterEffect.trim().startsWith(',')) {
+      foundNoDeps.push(match.index);
+    }
+  }
+  
+  if (foundNoDeps.length > 0) {
+    issues.push(`Found ${foundNoDeps.length} useEffect() without dependency array - will run on every render (infinite loop risk)`);
+    suggestions.push('Add dependency array: useEffect(() => {...}, []) for mount-only or useEffect(() => {...}, [dep1, dep2]) for conditional');
+  }
+  
+  // Check 4: setState with direct value inside setInterval/setTimeout (stale closure)
+  const stateInTimerPattern = /(?:setInterval|setTimeout)\s*\([^)]*set(\w+)\s*\(\s*(?!prev|p\s|function)/g;
+  const foundStaleClosures: string[] = [];
+  
+  while ((match = stateInTimerPattern.exec(code)) !== null) {
+    foundStaleClosures.push(`set${match[1]}`);
+  }
+  
+  if (foundStaleClosures.length > 0) {
+    issues.push(`Found state updates in timers without functional form: ${foundStaleClosures.join(', ')} - will use stale values`);
+    suggestions.push('Use functional updates in timers: setState(prev => prev + 1) instead of setState(value + 1)');
+  }
+  
+  return {
+    valid: issues.length === 0,
+    issues,
+    suggestions
   };
 }
 

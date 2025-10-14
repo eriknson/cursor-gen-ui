@@ -293,8 +293,16 @@ class CursorAgent {
     // Build full prompt with system instructions embedded
     let fullPrompt = options.prompt;
     if (options.systemPrompt) {
-      // Embed system prompt as clear instructions
-      fullPrompt = `${options.systemPrompt}\n\n---\n\nTask: ${options.prompt}`;
+      // Embed system prompt as clear instructions with strong separators
+      fullPrompt = `<SYSTEM_INSTRUCTIONS>
+${options.systemPrompt}
+</SYSTEM_INSTRUCTIONS>
+
+<USER_TASK>
+${options.prompt}
+</USER_TASK>
+
+Follow the SYSTEM_INSTRUCTIONS exactly when completing the USER_TASK.`;
     }
     
     // Escape the prompt for shell

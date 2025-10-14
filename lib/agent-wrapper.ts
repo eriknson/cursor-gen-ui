@@ -1,5 +1,5 @@
 import { cursor } from './cursor-agent';
-import { validateStructure, validateSafety, validateStyle, validateRuntimeSafety, validateRelevance, validateComponentScope, validateRuntimePatterns } from './component-validators';
+import { validateStructure, validateSafety, validateStyle, validateRuntimeSafety, validateRelevance, validateComponentScope, validateRuntimePatterns, validateHookUsage } from './component-validators';
 import { getLoadingState, LoadingPhase } from './loading-states';
 import { PLANNER_PROMPT, DATA_PROMPT, DATA_GENERATION_PROMPT, getRendererPrompt, CRITIC_PROMPT } from './agent-prompts';
 import { getExampleForIntent } from './component-registry';
@@ -156,12 +156,22 @@ ${fullPrompt}`;
       }
       
       // Log the raw response for debugging
+      console.log('🔍 Raw renderer output length:', renderResult.finalText.length);
       console.log('🔍 Raw renderer output (first 500 chars):', renderResult.finalText.slice(0, 500));
+      console.log('🔍 Raw renderer output (last 200 chars):', renderResult.finalText.slice(-200));
+      
+      // Check if response is empty or too short
+      if (!renderResult.finalText || renderResult.finalText.trim().length < 50) {
+        lastError = `LLM returned empty or very short response (${renderResult.finalText.length} chars). This might be a model configuration issue.`;
+        console.error('❌', lastError);
+        retryCount++;
+        continue;
+      }
       
       const extractedCode = extractCode(renderResult.finalText);
       
       if (!extractedCode) {
-        lastError = 'Failed to extract code from renderer output. Make sure to wrap code in [[CODE]]...[[/CODE]] markers.';
+        lastError = `Failed to extract code from renderer output. Response length: ${renderResult.finalText.length} chars. The LLM did not follow the [[CODE]]...[[/CODE]] format. First 200 chars: ${renderResult.finalText.slice(0, 200)}`;
         console.error('❌', lastError);
         retryCount++;
         continue;
@@ -224,6 +234,16 @@ ${fullPrompt}`;
     if (!runtimeCheck.safe) {
       console.warn('⚠️ Runtime safety warnings:', runtimeCheck.warnings);
       // Don't block execution - the safety transformer will fix these automatically
+    }
+    
+    // Hook usage validation (to catch memory leaks, infinite loops, stale closures)
+    const hookCheck = validateHookUsage(code);
+    if (!hookCheck.valid) {
+      console.warn('⚠️ Hook usage issues detected:', hookCheck.issues);
+      console.log('💡 Hook suggestions:', hookCheck.suggestions);
+      // Log but don't block - these are warnings to help improve code quality
+    } else if (code.includes('useEffect') || code.includes('useState')) {
+      console.log('✅ Hook usage validation passed');
     }
     
     // Relevance validation (ensure component matches user query)
@@ -326,14 +346,33 @@ function extractJSON(text: string): any {
 }
 
 function extractCode(text: string): string {
-  // Strategy 1: Try [[CODE]]...[[/CODE]] markers (preferred format)
-  let match = text.match(/\[\[CODE\]\]([\s\S]*?)\[\[\/CODE\]\]/);
+  if (!text || text.trim().length === 0) {
+    console.error('❌ extractCode received empty text');
+    return '';
+  }
+  
+  // Strategy 1: Try [[CODE]]...[[/CODE]] markers (preferred format) - case insensitive
+  let match = text.match(/\[\[CODE\]\]([\s\S]*?)\[\[\/CODE\]\]/i);
   if (match && match[1].trim()) {
     console.log('✅ Extracted code using [[CODE]] markers');
     return match[1].trim();
   }
   
-  // Strategy 2: Try markdown code blocks (```typescript, ```tsx, ```jsx, or ```)
+  // Strategy 2: Try to find code even with text before/after markers
+  const withPrefixMatch = text.match(/[\s\S]*?\[\[CODE\]\]([\s\S]*?)\[\[\/CODE\]\]/i);
+  if (withPrefixMatch && withPrefixMatch[1].trim()) {
+    console.log('✅ Extracted code using [[CODE]] markers (with surrounding text)');
+    return withPrefixMatch[1].trim();
+  }
+  
+  // Strategy 3: Look for single [[CODE]] marker (maybe LLM forgot to close)
+  const unclosedMatch = text.match(/\[\[CODE\]\]([\s\S]+)/i);
+  if (unclosedMatch && unclosedMatch[1].includes('GeneratedComponent')) {
+    console.log('⚠️ Found [[CODE]] marker but no closing [[/CODE]], extracting anyway');
+    return unclosedMatch[1].trim();
+  }
+  
+  // Strategy 4: Try markdown code blocks (```typescript, ```tsx, ```jsx, or ```)
   const codeBlockPatterns = [
     /```(?:typescript|tsx|jsx|javascript|js|react)\n([\s\S]*?)```/,
     /```\n([\s\S]*?)```/,
@@ -342,26 +381,40 @@ function extractCode(text: string): string {
   
   for (const pattern of codeBlockPatterns) {
     match = text.match(pattern);
-    if (match && match[1].trim()) {
+    if (match && match[1].trim() && match[1].includes('GeneratedComponent')) {
       console.log('✅ Extracted code using markdown code block');
       return match[1].trim();
     }
   }
   
-  // Strategy 3: Look for code that starts with "const GeneratedComponent"
-  const componentMatch = text.match(/const GeneratedComponent[\s\S]*?^}/m);
-  if (componentMatch) {
-    console.log('✅ Extracted code by finding GeneratedComponent');
-    return componentMatch[0].trim();
+  // Strategy 5: Look for complete GeneratedComponent definition
+  // Match from "const GeneratedComponent" to the last closing brace that completes it
+  const componentPattern = /const GeneratedComponent\s*=\s*\(\s*\)\s*=>\s*\{[\s\S]*?\n\};?/g;
+  const matches = text.match(componentPattern);
+  if (matches && matches.length > 0) {
+    // Take the longest match (most likely to be complete)
+    const longestMatch = matches.reduce((a, b) => a.length > b.length ? a : b);
+    console.log('✅ Extracted complete GeneratedComponent definition');
+    return longestMatch.trim();
   }
   
-  // Strategy 4: Look for any function component pattern
-  const functionMatch = text.match(/const \w+\s*=\s*\(\s*\)\s*=>\s*\{[\s\S]*?^}/m);
-  if (functionMatch) {
-    console.log('⚠️ Extracted code by finding function component pattern (may need renaming)');
-    return functionMatch[0].trim();
+  // Strategy 6: Try to find any const declaration that looks like a React component
+  const anyComponentMatch = text.match(/const \w+\s*=\s*\(\s*\)\s*=>\s*\{[\s\S]*?return[\s\S]*?\n\};?/);
+  if (anyComponentMatch) {
+    console.log('⚠️ Found a React component (may need to be renamed to GeneratedComponent)');
+    // Try to rename it to GeneratedComponent
+    const renamed = anyComponentMatch[0].replace(/const \w+\s*=/, 'const GeneratedComponent =');
+    return renamed.trim();
   }
   
+  // Log detailed debugging info
   console.error('❌ All extraction strategies failed');
+  console.error('Response length:', text.length);
+  console.error('Contains [[CODE]]:', text.includes('[[CODE]]'));
+  console.error('Contains [[/CODE]]:', text.includes('[[/CODE]]'));
+  console.error('Contains GeneratedComponent:', text.includes('GeneratedComponent'));
+  console.error('Contains ```:', text.includes('```'));
+  console.error('First 500 chars:', text.substring(0, 500));
+  console.error('Last 200 chars:', text.slice(-200));
   return '';
 }

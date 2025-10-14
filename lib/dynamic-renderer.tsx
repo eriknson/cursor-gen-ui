@@ -1,6 +1,7 @@
 import React from 'react';
 import { transform } from '@babel/standalone';
 import { ErrorBoundary } from 'react-error-boundary';
+import { validateAndSanitizeCSS } from './css-validator';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -259,12 +260,22 @@ export function DynamicRenderer({ code, data }: DynamicRendererProps) {
         .replace(/export\s+/g, '');
       
       // Apply safety transformations
-      const safeCode = transformCodeForSafety(codeWithoutExports);
+      let safeCode = transformCodeForSafety(codeWithoutExports);
       
-      // Log original code for debugging
+      // Apply CSS validation and sanitization
+      const { safe: cssValidatedCode, violations } = validateAndSanitizeCSS(safeCode);
+      safeCode = cssValidatedCode;
+      
+      // Log violations and transformations
       if (process.env.NODE_ENV === 'development') {
         console.log('🔧 Original component code (first 500 chars):', codeWithoutExports.slice(0, 500));
+        if (violations.length > 0) {
+          console.warn('⚠️ CSS safety violations fixed:', violations);
+        }
         console.log('🛡️ Safe code (first 500 chars):', safeCode.slice(0, 500));
+      } else if (violations.length > 0) {
+        // Always log violations even in production for debugging
+        console.warn('CSS violations auto-fixed:', violations.length, 'issues');
       }
       
       // Transform with Babel
@@ -286,6 +297,7 @@ export function DynamicRenderer({ code, data }: DynamicRendererProps) {
       const scope = {
         React,
         useState: React.useState,
+        useEffect: React.useEffect,
         useMemo: React.useMemo,
         useCallback: React.useCallback,
         useRef: React.useRef,

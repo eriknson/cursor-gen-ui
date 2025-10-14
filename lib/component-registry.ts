@@ -1,8 +1,28 @@
 import fs from 'fs';
 import path from 'path';
 
+/**
+ * Component Registry
+ * 
+ * Defines the scope of components available to AI-generated code.
+ * 
+ * CSS SAFETY RULES (enforced by css-validator.ts):
+ * - No position: absolute or fixed (use flexbox/grid)
+ * - Z-index limited to max 10
+ * - Overflow-hidden enforced on Card components
+ * - No large negative margins
+ * - Required responsive wrapper: md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full
+ * 
+ * PROGRESSIVE DISCLOSURE PATTERNS (encouraged):
+ * - Accordion for sections/lists
+ * - Tabs for switching views
+ * - Hover states for revealing details
+ * - Interactive controls (Slider, Switch)
+ * - Expandable sections with state
+ */
+
 export const COMPONENT_SCOPE = {
-  react: ['React', 'useState', 'useMemo', 'useCallback', 'useRef'],
+  react: ['React', 'useState', 'useEffect', 'useMemo', 'useCallback', 'useRef'],
   shadcn: [
     'Card', 'CardHeader', 'CardTitle', 'CardDescription', 'CardContent', 'CardFooter',
     'Badge', 'Button', 'Input', 'Label',
@@ -29,16 +49,16 @@ Other: ${COMPONENT_SCOPE.other.join(', ')} (Icons from lucide-react, NumberFlow 
 }
 
 const EXAMPLE_MAP: Record<string, string> = {
-  metric: 'stock-live.md',
-  fact: 'weather-minimal.md',
-  list: 'recipe-scannable.md',
-  comparison: 'phone-sortable.md',
+  metric: 'live-metric.md',
+  fact: 'expandable-detail.md',
+  list: 'hover-cards.md',
+  comparison: 'comparison-toggle.md',
   trend: 'metrics-dashboard.md',
   status: 'flight-status.md',
-  timeline: 'product-roadmap.md',
+  timeline: 'animated-timeline.md',
   profile: 'person-bio.md',
   gallery: 'photo-grid.md',
-  calculator: 'tip-calculator.md',
+  calculator: 'calculator.md',  // Changed from tip-calculator to simple calculator with buttons
   quote: 'testimonial.md',
   map: 'directions-steps.md'
 };
