@@ -3,6 +3,7 @@ import { Markdown } from "@/components/markdown";
 import { AgentResponse } from "./agent-wrapper";
 import { ComponentErrorBoundary } from "@/components/component-error-boundary";
 import { validateAgentResponse, sanitizeComponentCode } from "./validators";
+import { DynamicRenderer } from "./dynamic-renderer";
 
 // Import all components
 import { LineChart } from "@/components/line-chart";
@@ -229,7 +230,25 @@ function isValidChartData(data: any): boolean {
 }
 
 export function renderComponent(response: AgentResponse): ReactNode {
-  // Validate the response first
+  // NEW: Handle dynamic component code (primary path)
+  if (response.componentCode) {
+    return (
+      <ComponentErrorBoundary componentName="DynamicComponent">
+        <DynamicRenderer code={response.componentCode} data={response.data} />
+      </ComponentErrorBoundary>
+    );
+  }
+  
+  // Handle errors
+  if (response.error || response.textResponse) {
+    return (
+      <div className="text-foreground">
+        <Markdown>{response.textResponse || 'An error occurred'}</Markdown>
+      </div>
+    );
+  }
+  
+  // LEGACY: Old component-based rendering (backward compatibility)
   const validation = validateAgentResponse(response);
   if (!validation.valid) {
     console.error("Invalid agent response:", validation.error);
@@ -247,7 +266,7 @@ export function renderComponent(response: AgentResponse): ReactNode {
     try {
       return (
         <ComponentErrorBoundary componentName="DynamicComponent">
-          {renderDynamicComponent(customTSX, data, textResponse)}
+          {renderDynamicComponent(customTSX, data, textResponse || "")}
         </ComponentErrorBoundary>
       );
     } catch (error) {
@@ -575,7 +594,7 @@ export function renderComponent(response: AgentResponse): ReactNode {
     case "text":
     default:
       // Check if we're in a loading/partial state (no data but has componentType)
-      if (!data && !textResponse && componentType !== "text") {
+      if (!data && !textResponse && componentType && componentType !== "text") {
         return <ComponentSkeleton type={componentType} />;
       }
       

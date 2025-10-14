@@ -122,6 +122,7 @@ class CursorAgent {
       let finalText = "";
       let accumulatedText = "";
       let error: string | undefined;
+      let resolved = false; // Track if we've already resolved
       const startTime = Date.now();
 
       const apiKey = opts.apiKey ?? process.env.CURSOR_API_KEY;
@@ -131,6 +132,18 @@ class CursorAgent {
       };
 
       const command = this.buildCommand(opts);
+      
+      // Debug: log the command
+      const promptPreview = opts.prompt.slice(0, 100) + (opts.prompt.length > 100 ? '...' : '');
+      const systemPromptPreview = opts.systemPrompt ? opts.systemPrompt.slice(0, 100) + '...' : 'none';
+      console.log('🚀 Running cursor-agent with:', {
+        model: opts.model,
+        force: opts.force,
+        outputFormat: opts.outputFormat,
+        systemPromptPreview,
+        promptPreview,
+        commandLength: command.length
+      });
 
       const child = spawn("sh", ["-c", command], {
         env,
@@ -139,6 +152,8 @@ class CursorAgent {
 
       // Timeout after 5 minutes
       const timeout = setTimeout(() => {
+        if (resolved) return;
+        resolved = true;
         try {
           child.kill("SIGTERM");
         } catch {}
@@ -152,6 +167,8 @@ class CursorAgent {
       }, 5 * 60 * 1000);
 
       child.on("error", (err: Error) => {
+        if (resolved) return;
+        resolved = true;
         clearTimeout(timeout);
         resolve({
           success: false,
@@ -170,20 +187,38 @@ class CursorAgent {
           try {
             const event: CursorStreamEvent = JSON.parse(line);
             events.push(event);
+            
+            // Debug: log event types
+            if (event.type !== "assistant") {
+              console.log('📨 Received event type:', event.type, event.subtype || '');
+            }
 
             if (onEvent) {
               onEvent(event);
             }
 
             if (event.type === "assistant" && event.message?.content?.[0]?.text) {
-              accumulatedText += event.message.content[0].text;
+              const textChunk = event.message.content[0].text;
+              accumulatedText += textChunk;
+              // Debug: log first few chunks
+              if (accumulatedText.length < 500) {
+                console.log('📝 Received text chunk:', textChunk.slice(0, 100));
+              }
             }
 
             if (event.type === "result") {
+              if (resolved) return;
+              resolved = true;
               finalText = accumulatedText;
-              child.kill("SIGTERM");
               clearTimeout(timeout);
-
+              
+              // Debug: log what we got
+              console.log('✅ Got result event. Total text length:', finalText.length);
+              console.log('📄 First 300 chars of finalText:', finalText.slice(0, 300));
+              console.log('📄 Last 300 chars of finalText:', finalText.slice(-300));
+              
+              // Resolve immediately when we get the result
+              // Let the process exit naturally
               resolve({
                 success: true,
                 events,
@@ -202,12 +237,13 @@ class CursorAgent {
       child.stderr.on("data", (data: Buffer) => {
         const errorStr = data.toString();
         error = errorStr;
-        if (errorStr.includes("Error") || errorStr.includes("error")) {
-          console.error("⚠️", errorStr.trim());
-        }
+        // Always log stderr for debugging
+        console.error("📢 cursor-agent stderr:", errorStr.trim());
       });
 
       child.on("close", (code: number | null) => {
+        if (resolved) return; // Already resolved from result event
+        resolved = true;
         clearTimeout(timeout);
         const duration_ms = Date.now() - startTime;
 
@@ -254,10 +290,11 @@ class CursorAgent {
       parts.push("--api-key", options.apiKey);
     }
 
-    // Combine system prompt and user prompt if system prompt is provided
+    // Build full prompt with system instructions embedded
     let fullPrompt = options.prompt;
     if (options.systemPrompt) {
-      fullPrompt = `System: ${options.systemPrompt}\n\nUser: ${options.prompt}`;
+      // Embed system prompt as clear instructions
+      fullPrompt = `${options.systemPrompt}\n\n---\n\nTask: ${options.prompt}`;
     }
     
     // Escape the prompt for shell

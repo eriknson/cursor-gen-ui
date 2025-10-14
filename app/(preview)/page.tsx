@@ -10,6 +10,8 @@ import { ModelSelector } from "@/components/model-selector";
 import { sendMessage } from "./actions";
 import { renderComponent } from "@/lib/component-renderer";
 import { AgentResponse } from "@/lib/agent-wrapper";
+import { LoadingState } from "@/lib/loading-states";
+import { LoadingIndicator } from "@/components/loading-indicator";
 
 interface MessageItem {
   role: "user" | "assistant";
@@ -294,12 +296,10 @@ export default function Home() {
   const [input, setInput] = useState<string>("");
   const [messages, setMessages] = useState<Array<MessageItem>>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingStep, setLoadingStep] = useState<string>("Thinking");
+  const [loadingState, setLoadingState] = useState<LoadingState | null>(null);
   const [buildingResponse, setBuildingResponse] = useState<AgentResponse | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>('cheetah');
-  const [isFinishing, setIsFinishing] = useState(false);
-  const [pendingResponse, setPendingResponse] = useState<AgentResponse | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [messagesContainerRef, messagesEndRef] =
@@ -338,10 +338,10 @@ export default function Home() {
   ];
 
   const handleSubmit = async (userMessage: string) => {
-    if (!userMessage.trim() || isLoading || isFinishing) return;
+    if (!userMessage.trim() || isLoading) return;
 
     setIsLoading(true);
-    setLoadingStep("Thinking");
+    setLoadingState({ phase: 'analyzing', message: 'Understanding your question', progress: 5, subtext: 'Analyzing intent and requirements' });
 
     // Add user message
     setMessages((messages) => [
@@ -386,9 +386,9 @@ export default function Home() {
             try {
               const data = JSON.parse(line.slice(6));
               
-              if (data.type === "progress" && data.step) {
-                // Update loading step in real-time
-                setLoadingStep(data.step);
+              if (data.type === "progress") {
+                // Update loading state with progress, message, and subtext
+                setLoadingState(data);
               } else if (data.type === "partial" && data.chunk) {
                 // Progressive rendering of component as it builds
                 setBuildingResponse((prev: AgentResponse | null) => {
@@ -409,12 +409,8 @@ export default function Home() {
                   return prev;
                 });
               } else if (data.type === "complete" && data.response) {
-                // Store final response and enter finishing state
+                // Store final response
                 finalResponse = data.response;
-                setBuildingResponse(null);
-                setIsFinishing(true);
-                setPendingResponse(data.response);
-                setLoadingStep("Creating component");
               } else if (data.type === "error") {
                 throw new Error(data.message);
               }
@@ -426,16 +422,12 @@ export default function Home() {
         }
       }
 
-      // Wait 1.5 seconds in finishing state, then add final response to messages
+      // Add final response to messages
       if (finalResponse) {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
         setMessages((messages) => [
           ...messages,
           { role: "assistant", content: "", response: finalResponse },
         ]);
-        setIsFinishing(false);
-        setPendingResponse(null);
       } else {
         throw new Error("No response received");
       }
@@ -455,9 +447,8 @@ export default function Home() {
       ]);
     } finally {
       setIsLoading(false);
-      setIsFinishing(false);
-      setPendingResponse(null);
-      setLoadingStep("Thinking");
+      setLoadingState(null);
+      setBuildingResponse(null);
     }
   };
 
@@ -468,19 +459,31 @@ export default function Home() {
           ref={messagesContainerRef}        
           className="flex flex-col gap-2 h-full w-dvw items-center overflow-y-scroll pt-16"
         >
-          {messages.map((message, index) => (
-            <Message
-              key={index}
-              role={message.role}
-              content={
-                message.response
-                  ? renderComponent(message.response)
-                  : message.content
-              }
-            />
-          ))}
-          {/* Show building component while streaming */}
-          {isLoading && buildingResponse && !isFinishing && (
+          {messages.map((message, index) => {
+            // Check if this is an assistant message followed by a user message (end of group)
+            const isEndOfGroup = 
+              message.role === "assistant" && 
+              index < messages.length - 1 && 
+              messages[index + 1].role === "user";
+            
+            return (
+              <div 
+                key={index} 
+                className={isEndOfGroup ? "mb-4" : ""}
+              >
+                <Message
+                  role={message.role}
+                  content={
+                    message.response
+                      ? renderComponent(message.response)
+                      : message.content
+                  }
+                />
+              </div>
+            );
+          })}
+          {/* Show skeleton component while building */}
+          {isLoading && buildingResponse && (
             <motion.div
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
@@ -488,42 +491,13 @@ export default function Home() {
             >
               <Message
                 role="assistant"
-                content={renderComponent(buildingResponse)}
-              />
-            </motion.div>
-          )}
-          {/* Show skeleton component during finishing state */}
-          {isFinishing && pendingResponse && (
-            <motion.div
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Message
-                role="assistant"
-                content={<ComponentSkeleton componentType={pendingResponse.componentType} />}
+                content={<ComponentSkeleton componentType={buildingResponse.componentType || "generic"} />}
               />
             </motion.div>
           )}
           {/* Show loading indicator */}
-          {(isLoading || isFinishing) && !buildingResponse && (
-            <motion.div
-              className="flex flex-row gap-2 px-4 w-full md:w-[500px] md:px-0"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
-              <div className="size-[24px] flex flex-col justify-center items-center flex-shrink-0 text-muted-foreground">
-                <div className="animate-pulse">
-                  <CubeIcon />
-                </div>
-              </div>
-              <div className="flex flex-col gap-1 w-full">
-                <div className="text-foreground flex items-center animate-pulse">
-                  {loadingStep}
-                  <AnimatedDots />
-                </div>
-              </div>
-            </motion.div>
+          {isLoading && !buildingResponse && loadingState && (
+            <LoadingIndicator loadingState={loadingState} />
           )}
           <div ref={messagesEndRef} />
         </div>
@@ -531,7 +505,6 @@ export default function Home() {
         <div className="grid sm:grid-cols-2 gap-2 w-full px-4 md:px-0 mx-auto md:max-w-[500px] mb-4">
           {messages.length === 0 &&
             !isLoading &&
-            !isFinishing &&
             suggestedActions.map((action, index) => (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -542,7 +515,7 @@ export default function Home() {
               >
                 <button
                   onClick={() => handleSubmit(action.action)}
-                  disabled={isLoading || isFinishing}
+                  disabled={isLoading}
                   className="w-full text-left border border-border text-foreground rounded-lg p-2 text-sm hover:bg-muted transition-colors flex flex-col disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="font-medium">{action.title}</span>
@@ -581,7 +554,7 @@ export default function Home() {
               onChange={(event) => setInput(event.target.value)}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
-              disabled={isLoading || isFinishing}
+              disabled={isLoading}
             />
             
             {/* Model Selector and Agent Row */}
@@ -590,14 +563,14 @@ export default function Home() {
                 <ModelSelector 
                   selectedModel={selectedModel}
                   onModelChange={setSelectedModel}
-                  disabled={isLoading || isFinishing}
+                  disabled={isLoading}
                 />
               </div>
               
               <div className="flex items-center gap-1.5 sm:gap-2">                
                 <button
                   type="submit"
-                  disabled={isLoading || isFinishing || !input.trim()}
+                  disabled={isLoading || !input.trim()}
                   onClick={(e) => e.stopPropagation()}
                   className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity shrink-0"
                 >
