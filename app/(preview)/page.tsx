@@ -462,11 +462,12 @@ export default function Home() {
   };
 
   return (    
-    <div className="flex flex-row justify-center pb-20 h-dvh bg-background">
+    <div className="flex flex-row justify-center pb-20 md:pb-20 h-dvh bg-background" style={{ paddingBottom: 'max(5rem, env(safe-area-inset-bottom) + 3rem)' }}>
       <div className="flex flex-col justify-between">     
         <div
           ref={messagesContainerRef}        
-          className="flex flex-col gap-2 h-full w-dvw items-center overflow-y-scroll pt-16"
+          className="flex flex-col gap-4 md:gap-2 h-full w-full items-center overflow-y-scroll"
+          style={{ paddingTop: 'max(4rem, env(safe-area-inset-top) + 2rem)' }}
         >
           {messages.map((message, index) => (
             <Message
@@ -599,7 +600,7 @@ export default function Home() {
                   type="submit"
                   disabled={isLoading || isFinishing || !input.trim()}
                   onClick={(e) => e.stopPropagation()}
-                  className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity shrink-0"
+                  className="w-11 h-11 rounded-full bg-foreground text-background flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity shrink-0"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 19V5M5 12l7-7 7 7"/>
