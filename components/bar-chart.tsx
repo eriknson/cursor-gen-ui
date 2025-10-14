@@ -85,7 +85,7 @@ export const BarChart = ({ data, config = {} }: BarChartProps) => {
 
     // Create chart config for shadcn
     chartConfig = multiData.datasets.reduce((acc, dataset, idx) => {
-      const color = dataset.color || config.colors?.[idx] || MONOCHROME_COLORS[idx % MONOCHROME_COLORS.length];
+      const color = dataset.color || config.colors?.[idx] || DEFAULT_COLORS[idx % DEFAULT_COLORS.length];
       acc[dataset.name] = {
         label: dataset.name,
         color: color,
@@ -117,16 +117,6 @@ export const BarChart = ({ data, config = {} }: BarChartProps) => {
   const showLegend = config.showLegend ?? (isMultiDataset && Object.keys(chartConfig).length > 1);
   const title = config.title || (isMultiDataset && chartData.length > 0 ? chartConfig[Object.keys(chartConfig)[0]]?.label : null);
   
-  // Temporary debug - check actual data
-  if (chartData.length > 0) {
-    console.log('=== BAR CHART DEBUG ===');
-    console.log('Raw data:', data);
-    console.log('Chart data:', chartData);
-    console.log('Chart config:', chartConfig);
-    console.log('Config keys:', Object.keys(chartConfig));
-    console.log('First data point:', chartData[0]);
-  }
-  
   return (
     <motion.div
       className="md:max-w-[452px] max-w-full w-full pb-6"
@@ -147,7 +137,6 @@ export const BarChart = ({ data, config = {} }: BarChartProps) => {
                 data={chartData}
                 layout={variant === "horizontal" ? "horizontal" : "vertical"}
                 margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
-                barSize={60}
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 {variant === "horizontal" ? (
@@ -198,6 +187,7 @@ export const BarChart = ({ data, config = {} }: BarChartProps) => {
                       fill={itemColor || `var(--color-${key})`}
                       stackId={grouping === "stacked" ? "stack" : undefined}
                       radius={[4, 4, 0, 0]}
+                      fillOpacity={0.9}
                     />
                   );
                 })}
