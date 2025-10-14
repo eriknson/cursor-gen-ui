@@ -16,7 +16,7 @@ export const ImageGallery = ({ images }: { images: ImageItem[] }) => {
   }
 
   return (
-    <div className="md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full pb-6">
+    <div className="md:max-w-[452px] max-w-full w-full pb-6">
       <div className="grid grid-cols-2 gap-2">
         {images.map((image, index) => (
           <motion.div

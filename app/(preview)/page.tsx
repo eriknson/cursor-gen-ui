@@ -66,7 +66,7 @@ function ComponentSkeleton({ componentType }: { componentType: string }) {
   // Chart-based components - match actual chart dimensions
   if (componentType.includes('chart') || componentType.includes('gauge')) {
     return (
-      <div className="md:max-w-[500px] max-w-[calc(100dvw-80px)] w-full">
+      <div className="md:max-w-[500px] max-w-full w-full">
         <div className="border rounded-lg overflow-hidden">
           <div className="p-6">
             <div className={`h-6 w-48 ${baseClasses} mb-4`} /> {/* Title */}
@@ -80,7 +80,7 @@ function ComponentSkeleton({ componentType }: { componentType: string }) {
   // Weather card - match exact weather card structure
   if (componentType === 'weather-card') {
     return (
-      <div className="md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full">
+      <div className="md:max-w-[452px] max-w-full w-full">
         <div className="border rounded-lg overflow-hidden">
           <div className="p-6">
             {/* Header with location and icon */}
@@ -121,7 +121,7 @@ function ComponentSkeleton({ componentType }: { componentType: string }) {
   // Stock ticker
   if (componentType === 'stock-ticker') {
     return (
-      <div className="md:max-w-[500px] max-w-[calc(100dvw-80px)] w-full">
+      <div className="md:max-w-[500px] max-w-full w-full">
         <div className="border rounded-lg overflow-hidden">
           <div className="p-6 space-y-4">
             <div className="flex items-center justify-between">
@@ -138,7 +138,7 @@ function ComponentSkeleton({ componentType }: { componentType: string }) {
   // Recipe card
   if (componentType === 'recipe-card') {
     return (
-      <div className="md:max-w-[500px] max-w-[calc(100dvw-80px)] w-full">
+      <div className="md:max-w-[500px] max-w-full w-full">
         <div className="border rounded-lg overflow-hidden">
           <div className="p-6 space-y-4">
             <div className={`h-8 w-64 ${baseClasses}`} /> {/* Title */}
@@ -162,7 +162,7 @@ function ComponentSkeleton({ componentType }: { componentType: string }) {
   // Comparison table
   if (componentType === 'comparison-table') {
     return (
-      <div className="md:max-w-[500px] max-w-[calc(100dvw-80px)] w-full">
+      <div className="md:max-w-[500px] max-w-full w-full">
         <div className="border rounded-lg overflow-hidden">
           <div className="p-6 space-y-3">
             <div className={`h-8 w-full ${baseClasses}`} /> {/* Header */}
@@ -182,7 +182,7 @@ function ComponentSkeleton({ componentType }: { componentType: string }) {
   // Timeline
   if (componentType === 'timeline') {
     return (
-      <div className="md:max-w-[500px] max-w-[calc(100dvw-80px)] w-full">
+      <div className="md:max-w-[500px] max-w-full w-full">
         <div className="border rounded-lg overflow-hidden">
           <div className="p-6 space-y-6">
             {[1, 2, 3].map((i) => (
@@ -203,7 +203,7 @@ function ComponentSkeleton({ componentType }: { componentType: string }) {
   // Stat card - match grid layout
   if (componentType === 'stat-card') {
     return (
-      <div className="md:max-w-[500px] max-w-[calc(100dvw-80px)] w-full">
+      <div className="md:max-w-[500px] max-w-full w-full">
         <div className="border rounded-lg overflow-hidden">
           <div className="p-6">
             <div className="grid grid-cols-2 gap-4">
@@ -220,7 +220,7 @@ function ComponentSkeleton({ componentType }: { componentType: string }) {
   // List with icons
   if (componentType === 'list-with-icons') {
     return (
-      <div className="md:max-w-[500px] max-w-[calc(100dvw-80px)] w-full">
+      <div className="md:max-w-[500px] max-w-full w-full">
         <div className="border rounded-lg overflow-hidden">
           <div className="p-6 space-y-3">
             {[1, 2, 3, 4].map((i) => (
@@ -238,7 +238,7 @@ function ComponentSkeleton({ componentType }: { componentType: string }) {
   // Profile card
   if (componentType === 'profile-card') {
     return (
-      <div className="md:max-w-[500px] max-w-[calc(100dvw-80px)] w-full">
+      <div className="md:max-w-[500px] max-w-full w-full">
         <div className="border rounded-lg overflow-hidden">
           <div className="p-6 space-y-4">
             <div className="flex gap-4 items-center">
@@ -258,7 +258,7 @@ function ComponentSkeleton({ componentType }: { componentType: string }) {
   // Media grid / images
   if (componentType === 'media-grid' || componentType === 'images') {
     return (
-      <div className="md:max-w-[500px] max-w-[calc(100dvw-80px)] w-full">
+      <div className="md:max-w-[500px] max-w-full w-full">
         <div className="border rounded-lg overflow-hidden">
           <div className="p-6">
             <div className="grid grid-cols-2 gap-4">
@@ -274,7 +274,7 @@ function ComponentSkeleton({ componentType }: { componentType: string }) {
   
   // Default card skeleton for other types
   return (
-    <div className="md:max-w-[500px] max-w-[calc(100dvw-80px)] w-full">
+    <div className="md:max-w-[500px] max-w-full w-full">
       <div className="border rounded-lg overflow-hidden">
         <div className="p-6 space-y-4">
           <div className={`h-6 w-48 ${baseClasses}`} />
@@ -462,11 +462,12 @@ export default function Home() {
   };
 
   return (    
-    <div className="flex flex-row justify-center pb-20 h-dvh bg-background">
+    <div className="flex flex-row justify-center pb-20 md:pb-20 h-dvh bg-background" style={{ paddingBottom: 'max(5rem, env(safe-area-inset-bottom) + 3rem)' }}>
       <div className="flex flex-col justify-between">     
         <div
           ref={messagesContainerRef}        
-          className="flex flex-col gap-2 h-full w-dvw items-center overflow-y-scroll pt-16"
+          className="flex flex-col gap-4 md:gap-2 h-full w-full items-center overflow-y-scroll"
+          style={{ paddingTop: 'max(4rem, env(safe-area-inset-top) + 2rem)' }}
         >
           {messages.map((message, index) => (
             <Message
@@ -563,7 +564,7 @@ export default function Home() {
         >
           <div 
             className={`
-              flex flex-col w-full md:max-w-[500px] max-w-[calc(100dvw-32px)]
+              flex flex-col w-full md:max-w-[500px] max-w-full px-4 md:px-0
               border rounded-lg transition-all duration-200 cursor-text
               ${isFocused 
                 ? 'bg-white dark:bg-[#2A2A2A] border-border' 
@@ -599,7 +600,7 @@ export default function Home() {
                   type="submit"
                   disabled={isLoading || isFinishing || !input.trim()}
                   onClick={(e) => e.stopPropagation()}
-                  className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity shrink-0"
+                  className="w-11 h-11 rounded-full bg-foreground text-background flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity shrink-0"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 19V5M5 12l7-7 7 7"/>

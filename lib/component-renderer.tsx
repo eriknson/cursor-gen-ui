@@ -27,7 +27,7 @@ import { ImageGallery } from "@/components/image-gallery";
 
 // Loading skeleton component for streaming states
 function ComponentSkeleton({ type }: { type: string }) {
-  const baseClasses = "md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full";
+  const baseClasses = "md:max-w-[452px] max-w-full w-full";
   
   // Chart-like skeleton (for line, bar, area, pie, gauge, stock)
   if (['line-chart', 'bar-chart', 'area-chart', 'pie-chart', 'gauge-chart', 'stock-ticker'].includes(type)) {
@@ -106,7 +106,7 @@ function ComponentSkeleton({ type }: { type: string }) {
   // Weather card skeleton - matches actual weather card structure
   if (type === 'weather-card') {
     return (
-      <div className="md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full">
+      <div className="md:max-w-[452px] max-w-full w-full">
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="p-6 animate-pulse">
             <div className="flex items-start justify-between mb-4">

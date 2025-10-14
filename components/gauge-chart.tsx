@@ -88,7 +88,7 @@ export const GaugeChart = ({ data, config = {} }: GaugeChartProps) => {
 
   return (
     <motion.div
-      className="md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full"
+      className="md:max-w-[452px] max-w-full w-full"
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
