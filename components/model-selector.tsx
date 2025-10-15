@@ -1,5 +1,7 @@
 "use client";
 
+import { useRef, useEffect, useState } from 'react';
+
 const ALL_MODELS = [
   { value: 'auto', label: 'auto', cost: 'free' },
   { value: 'cheetah', label: 'cheetah', cost: 'low' },
@@ -28,6 +30,17 @@ interface ModelSelectorProps {
 }
 
 export function ModelSelector({ selectedModel, onModelChange, disabled }: ModelSelectorProps) {
+  const selectRef = useRef<HTMLSelectElement>(null);
+  const measureRef = useRef<HTMLSpanElement>(null);
+  const [selectWidth, setSelectWidth] = useState<number>(0);
+
+  useEffect(() => {
+    if (measureRef.current) {
+      // Add a small buffer for the padding and arrow space
+      setSelectWidth(measureRef.current.offsetWidth);
+    }
+  }, [selectedModel]);
+
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newModel = e.target.value;
     onModelChange(newModel);
@@ -37,14 +50,26 @@ export function ModelSelector({ selectedModel, onModelChange, disabled }: ModelS
     url.searchParams.set('model', newModel);
     window.history.pushState({}, '', url);
   };
+
+  const selectedLabel = MODELS.find(m => m.value === selectedModel)?.label || selectedModel;
   
   return (
     <div className="relative">
+      {/* Hidden span to measure text width */}
+      <span
+        ref={measureRef}
+        className="absolute invisible text-xs sm:text-sm font-[inherit] whitespace-nowrap pl-2.5 sm:pl-3 pr-7 sm:pr-8"
+        aria-hidden="true"
+      >
+        {selectedLabel}
+      </span>
       <select
+        ref={selectRef}
         value={selectedModel}
         onChange={handleChange}
         disabled={disabled}
-        className="appearance-none bg-muted/40 hover:bg-muted/60 transition-colors rounded-full pl-2.5 sm:pl-3 pr-7 sm:pr-8 py-1 sm:py-1.5 text-xs sm:text-sm text-muted-foreground border-0 outline-none disabled:opacity-50 cursor-pointer max-w-[140px] sm:max-w-none"
+        style={{ width: selectWidth > 0 ? `${selectWidth}px` : undefined }}
+        className="appearance-none bg-muted/40 hover:bg-muted/60 transition-colors rounded-full pl-2.5 sm:pl-3 pr-7 sm:pr-8 py-1 text-xs sm:text-sm text-muted-foreground border-0 outline-none disabled:opacity-50 cursor-pointer"
       >
         {MODELS.map((model) => (
           <option key={model.value} value={model.value}>

@@ -1,8 +1,9 @@
 "use server";
 
-import { queryAgent, AgentResponse } from "@/lib/agent-wrapper";
+import { queryAgent } from "@/lib/agent-wrapper";
+import type { WidgetResponse } from "@/lib/widget-schema";
 
-export const sendMessage = async (message: string): Promise<AgentResponse> => {
+export const sendMessage = async (message: string): Promise<WidgetResponse> => {
   try {
     // Query the cursor agent
     const response = await queryAgent(message);
@@ -12,8 +13,7 @@ export const sendMessage = async (message: string): Promise<AgentResponse> => {
 
     // Return error response
     return {
-      componentType: "text",
-      data: null,
+      error: true,
       textResponse: "Sorry, I encountered an error processing your request. Please try again.",
     };
   }

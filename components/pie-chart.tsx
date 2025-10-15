@@ -14,17 +14,18 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import NumberFlow from "@number-flow/react";
 
-// Monochrome color palette - using actual color values that work in both light and dark modes
-const MONOCHROME_COLORS = [
-  "#1E1E1E",  // Primary dark
-  "#6B6B6B",  // Secondary grey
-  "#A8A8A8",  // Light grey
-  "#8B8B8B",  // Medium grey
-  "#707070",  // Another grey
-  "#959595",  // Light medium grey
-  "#5A5A5A",  // Dark grey
-  "#ABABAB",  // Very light grey
+// Vibrant color palette for better visibility and distinction
+const CHART_COLORS = [
+  "hsl(220, 85%, 55%)",  // Bright blue
+  "hsl(25, 95%, 55%)",   // Bright orange
+  "hsl(140, 70%, 45%)",  // Green
+  "hsl(280, 70%, 60%)",  // Purple
+  "hsl(340, 85%, 55%)",  // Pink/Red
+  "hsl(45, 90%, 55%)",   // Yellow
+  "hsl(180, 70%, 45%)",  // Cyan
+  "hsl(15, 85%, 60%)",   // Coral
 ];
 
 interface DataPoint {
@@ -46,7 +47,7 @@ export const PieChart = ({ data, config = {} }: PieChartProps) => {
   const showPercentages = config.showPercentages ?? true;
   const theme = config.theme || "default";
 
-  const colors = config.colors || MONOCHROME_COLORS;
+  const colors = config.colors || CHART_COLORS;
 
   const total = data.reduce((sum, d) => sum + d.value, 0);
 
@@ -66,21 +67,16 @@ export const PieChart = ({ data, config = {} }: PieChartProps) => {
   }, {} as ChartConfig);
 
   const title = config.title;
+  const subtitle = config.subtitle;
 
   return (
-    <motion.div
-      className="md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full pb-6"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <Card>
-        {title && (
-          <CardHeader>
-            <CardTitle>{title}</CardTitle>
-          </CardHeader>
-        )}
-        <CardContent className={title ? "p-4" : "p-4 pt-6"}>
+    <div className="w-full px-6 pt-6 pb-2 space-y-4">
+      {(title || subtitle) && (
+        <div className="space-y-1 pb-2">
+          {title && <h3 className="text-base font-semibold tracking-tight">{title}</h3>}
+          {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+        </div>
+      )}
           <div className="w-full h-[280px]">
             <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
               <RechartsPieChart>
@@ -116,16 +112,18 @@ export const PieChart = ({ data, config = {} }: PieChartProps) => {
                   </div>
                   {showPercentages && (
                     <div className="text-xs font-semibold text-foreground">
-                      {((item.value / total) * 100).toFixed(1)}%
+                      <NumberFlow 
+                        value={(item.value / total) * 100} 
+                        format={{ maximumFractionDigits: 1 }}
+                        suffix="%"
+                      />
                     </div>
                   )}
                 </div>
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+    </div>
   );
 };
 

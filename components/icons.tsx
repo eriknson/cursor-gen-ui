@@ -36,21 +36,10 @@ export const BotIcon = () => {
 
 export const UserIcon = () => {
   return (
-    <svg
-      data-testid="geist-icon"
-      height="16"
-      strokeLinejoin="round"
-      viewBox="0 0 16 16"
-      width="16"
-      style={{ color: "currentcolor" }}
-    >
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M7.75 0C5.95507 0 4.5 1.45507 4.5 3.25V3.75C4.5 5.54493 5.95507 7 7.75 7H8.25C10.0449 7 11.5 5.54493 11.5 3.75V3.25C11.5 1.45507 10.0449 0 8.25 0H7.75ZM6 3.25C6 2.2835 6.7835 1.5 7.75 1.5H8.25C9.2165 1.5 10 2.2835 10 3.25V3.75C10 4.7165 9.2165 5.5 8.25 5.5H7.75C6.7835 5.5 6 4.7165 6 3.75V3.25ZM2.5 14.5V13.1709C3.31958 11.5377 4.99308 10.5 6.82945 10.5H9.17055C11.0069 10.5 12.6804 11.5377 13.5 13.1709V14.5H2.5ZM6.82945 9C4.35483 9 2.10604 10.4388 1.06903 12.6857L1 12.8353V13V15.25V16H1.75H14.25H15V15.25V13V12.8353L14.931 12.6857C13.894 10.4388 11.6452 9 9.17055 9H6.82945Z"
-        fill="currentColor"
-      ></path>
-    </svg>
+    <div 
+      className="w-2 h-2 rounded-full bg-muted-foreground/40"
+      aria-label="User"
+    />
   );
 };
 
@@ -190,6 +179,44 @@ export const GitIcon = () => {
           <rect width="16" height="16" fill="white"></rect>
         </clipPath>
       </defs>
+    </svg>
+  );
+};
+
+export const SearchIcon = () => {
+  return (
+    <svg
+      height="12"
+      strokeLinejoin="round"
+      viewBox="0 0 16 16"
+      width="12"
+      style={{ color: "currentcolor" }}
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M10.5 7C10.5 8.933 8.933 10.5 7 10.5C5.067 10.5 3.5 8.933 3.5 7C3.5 5.067 5.067 3.5 7 3.5C8.933 3.5 10.5 5.067 10.5 7ZM9.99193 11.0531C9.12657 11.6457 8.08538 12 7 12C4.23858 12 2 9.76142 2 7C2 4.23858 4.23858 2 7 2C9.76142 2 12 4.23858 12 7C12 8.08538 11.6457 9.12657 11.0531 9.99193L14.0304 12.9693L12.9693 14.0304L9.99193 11.0531Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};
+
+export const SparklesIcon = () => {
+  return (
+    <svg
+      height="12"
+      strokeLinejoin="round"
+      viewBox="0 0 16 16"
+      width="12"
+      style={{ color: "currentcolor" }}
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M8 0L8.70711 2.29289L11 3L8.70711 3.70711L8 6L7.29289 3.70711L5 3L7.29289 2.29289L8 0ZM3.5 5.5L4.20711 7.79289L6.5 8.5L4.20711 9.20711L3.5 11.5L2.79289 9.20711L0.5 8.5L2.79289 7.79289L3.5 5.5ZM8 10L9.41421 14.5858L14 16L9.41421 17.4142L8 22L6.58579 17.4142L2 16L6.58579 14.5858L8 10Z"
+        fill="currentColor"
+      />
     </svg>
   );
 };

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
+import NumberFlow from "@number-flow/react";
 
 export const TableView = ({ data }: { data: Record<string, any>[] }) => {
   if (!data || data.length === 0) {
@@ -23,14 +24,8 @@ export const TableView = ({ data }: { data: Record<string, any>[] }) => {
   );
 
   return (
-    <motion.div
-      className="md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full pb-6"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-    >
-      <Card>
-        <CardContent className="p-0">
-          <ScrollArea className="h-[400px]">
+    <div className="w-full p-6">
+      <ScrollArea className="h-[400px] rounded-lg border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -57,9 +52,15 @@ export const TableView = ({ data }: { data: Record<string, any>[] }) => {
                         key={key}
                         className="text-sm text-foreground"
                       >
-                        {row[key] !== undefined && row[key] !== null
-                          ? String(row[key])
-                          : "-"}
+                        {row[key] !== undefined && row[key] !== null ? (
+                          typeof row[key] === 'number' ? (
+                            <NumberFlow value={row[key]} />
+                          ) : (
+                            String(row[key])
+                          )
+                        ) : (
+                          "-"
+                        )}
                       </TableCell>
                     ))}
                   </motion.tr>
@@ -67,9 +68,7 @@ export const TableView = ({ data }: { data: Record<string, any>[] }) => {
               </TableBody>
             </Table>
           </ScrollArea>
-        </CardContent>
-      </Card>
-    </motion.div>
+    </div>
   );
 };
 
