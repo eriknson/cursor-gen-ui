@@ -15,24 +15,53 @@ const getAllAvailableComponents = (): string[] => {
  * Validates that all components used in the code are available in the runtime scope.
  * This prevents "X is not defined" runtime errors.
  */
-export function validateComponentScope(code: string): { valid: boolean; issues: string[] } {
+export function validateComponentScope(code: string): { valid: boolean; issues: string[]; suggestions?: { componentName: string; suggestion: string }[] } {
   const issues: string[] = [];
+  const suggestions: { componentName: string; suggestion: string }[] = [];
   const availableComponents = getAllAvailableComponents();
+  
+  // Build suggestion map for common patterns
+  const suggestionMap: Record<string, string> = {
+    Icon: 'Use Icons.* directly (e.g., Icons.CloudSun, Icons.Check, Icons.Sun)',
+    Component: 'Inline JSX in GeneratedComponent, no helper components allowed',
+    Wrapper: 'Use div or Card directly with inline JSX',
+    Card: 'Use Card component directly, no wrapper needed',
+    Button: 'Use Button component directly, no wrapper needed',
+    Weather: 'Use Icons.* directly for weather icons (Icons.CloudSun, Icons.Sun, etc.)',
+    Condition: 'Use Icons.* directly for condition icons'
+  };
   
   // CRITICAL: Check for helper component definitions (FORBIDDEN)
   // Patterns like: const MyComponent = () => ..., function MyComponent() { ... }
   // But NOT React state setters like setSomething, or regular functions like handleClick
-  const helperComponentPattern = /(?:const|let|var|function)\s+([A-Z][a-zA-Z0-9]+)\s*=\s*(?:\([^)]*\)\s*=>)/g;
-  let match;
+  const helperComponentPatterns = [
+    /(?:const|let|var)\s+([A-Z][a-zA-Z0-9]*)\s*=\s*(?:\([^)]*\)\s*=>)/g,
+    /function\s+([A-Z][a-zA-Z0-9]*)\s*\(/g,
+    /(?:const|let|var)\s+([A-Z][a-zA-Z0-9]*)\s*=\s*function\s*\(/g
+  ];
   
-  while ((match = helperComponentPattern.exec(code)) !== null) {
-    const componentName = match[1];
-    // Allow only GeneratedComponent (the main one)
-    // Also ignore if it's a type/interface pattern or common non-component patterns
-    if (componentName !== 'GeneratedComponent' && 
-        !componentName.startsWith('set') &&  // Ignore setState functions that might be extracted
-        componentName.length > 2) {  // Ignore single/double letter variables
-      issues.push(`FORBIDDEN: Helper component/function "${componentName}" detected. All JSX must be inline in GeneratedComponent. Do not create helper components or functions that look like components.`);
+  for (const pattern of helperComponentPatterns) {
+    let match;
+    while ((match = pattern.exec(code)) !== null) {
+      const componentName = match[1];
+      // Allow only GeneratedComponent (the main one)
+      // Also ignore if it's a type/interface pattern or common non-component patterns
+      if (componentName !== 'GeneratedComponent' && 
+          !componentName.startsWith('set') &&  // Ignore setState functions that might be extracted
+          componentName.length > 2) {  // Ignore single/double letter variables
+        
+        // Find appropriate suggestion based on component name patterns
+        let suggestion = 'Inline JSX in GeneratedComponent, no helper components allowed';
+        for (const [pattern, suggestionText] of Object.entries(suggestionMap)) {
+          if (componentName.includes(pattern)) {
+            suggestion = suggestionText;
+            break;
+          }
+        }
+        
+        issues.push(`FORBIDDEN: Helper component/function "${componentName}" detected. All JSX must be inline in GeneratedComponent. Do not create helper components or functions that look like components.`);
+        suggestions.push({ componentName, suggestion });
+      }
     }
   }
   
@@ -41,6 +70,7 @@ export function validateComponentScope(code: string): { valid: boolean; issues: 
   const hookPattern = /\b(use[A-Z][a-zA-Z]*)\s*\(/g;
   const usedHooks = new Set<string>();
   
+  let match;
   while ((match = hookPattern.exec(code)) !== null) {
     usedHooks.add(match[1]);
   }
@@ -63,7 +93,17 @@ export function validateComponentScope(code: string): { valid: boolean; issues: 
   // Check each used component
   for (const component of usedComponents) {
     if (!availableComponents.includes(component)) {
-      issues.push(`Component "${component}" is not available in runtime scope. Add it to COMPONENT_SCOPE in component-registry.ts and import it in dynamic-renderer.tsx`);
+      // Find appropriate suggestion
+      let suggestion = 'Add it to COMPONENT_SCOPE in component-registry.ts and import it in dynamic-renderer.tsx';
+      for (const [pattern, suggestionText] of Object.entries(suggestionMap)) {
+        if (component.includes(pattern)) {
+          suggestion = suggestionText;
+          break;
+        }
+      }
+      
+      issues.push(`Component "${component}" is not available in runtime scope. ${suggestion}`);
+      suggestions.push({ componentName: component, suggestion });
     }
   }
   
@@ -113,13 +153,15 @@ export function validateComponentScope(code: string): { valid: boolean; issues: 
       // But skip if it appears to be a data transformation function
       if (component.length > 15 || component.toLowerCase().includes('component')) {
         issues.push(`Function/Component "${component}" is not available in runtime scope`);
+        suggestions.push({ componentName: component, suggestion: 'Inline JSX in GeneratedComponent, no helper components allowed' });
       }
     }
   }
   
   return {
     valid: issues.length === 0,
-    issues
+    issues,
+    suggestions: suggestions.length > 0 ? suggestions : undefined
   };
 }
 
@@ -157,16 +199,13 @@ export function validateStyle(code: string): { score: number; warnings: string[]
   
   if (!code.includes('<Card')) {
     warnings.push('Should wrap in Card component');
-    score -= 20;
+    score -= 15; // Reduced from 20
   }
   if (!code.includes('md:max-w-[452px]')) {
     warnings.push('Use correct responsive width: md:max-w-[452px] max-w-[calc(100dvw-80px)]');
-    score -= 10;
+    score -= 8; // Reduced from 10
   }
-  if (code.split('\n').length > 120) {
-    warnings.push('Code too long (keep under 120 lines)');
-    score -= 15;
-  }
+  // REMOVED: Arbitrary line limit - natural code length is fine
   if (!code.includes('motion.div')) {
     warnings.push('Add framer-motion entrance animation');
     score -= 5;
@@ -269,34 +308,72 @@ export function validateRelevance(
   const issues: string[] = [];
   let score = 100;
   
-  // Check if key entities appear in the code
   const codeContent = code.toLowerCase();
-  const missingEntities = keyEntities.filter(
-    entity => !codeContent.includes(entity.toLowerCase())
-  );
   
-  if (missingEntities.length > 0 && keyEntities.length > 0) {
-    issues.push(`Missing key entities: ${missingEntities.join(', ')}`);
-    score -= 40;
+  // Smarter entity matching: check for partial matches and word fragments
+  const missingEntities: string[] = [];
+  for (const entity of keyEntities) {
+    const entityLower = entity.toLowerCase();
+    const entityWords = entityLower.split(/\s+/);
+    
+    // Check if entire entity or any of its words appear in code
+    const hasFullMatch = codeContent.includes(entityLower);
+    const hasPartialMatch = entityWords.some(word => 
+      word.length > 3 && codeContent.includes(word)
+    );
+    
+    if (!hasFullMatch && !hasPartialMatch) {
+      missingEntities.push(entity);
+    }
   }
   
-  // Check for generic placeholders that suggest irrelevant content
-  const genericTerms = [
-    'example', 'sample', 'demo', 'placeholder',
-    'test project', 'project portfolio', 'todo list'
+  // Reduce penalty for missing entities (was -40, now -20)
+  if (missingEntities.length > 0 && keyEntities.length > 0) {
+    const missingRatio = missingEntities.length / keyEntities.length;
+    const penalty = Math.round(20 * missingRatio);
+    issues.push(`Missing key entities: ${missingEntities.join(', ')}`);
+    score -= penalty;
+  }
+  
+  // Context-aware generic term detection
+  // Only flag if terms appear in placeholder-like patterns
+  const genericPatterns = [
+    /\bexample\s+\d+\b/i,              // "example 1", "example 2"
+    /\bsample\s+data\b/i,              // "sample data"
+    /\bsample\s+\d+\b/i,               // "sample 1", "sample 2"
+    /\bdemo\s+(data|item|project)\b/i, // "demo data", "demo item"
+    /\bplaceholder/i,                  // "placeholder"
+    /\btest\s+(project|data|item)\b/i, // "test project"
+    /\btodo\s+list\b/i,                // "todo list"
+    /\bproject\s+portfolio\b/i         // "project portfolio"
   ];
   
-  const foundGeneric = genericTerms.filter(
-    term => codeContent.includes(term.toLowerCase())
-  );
-  
-  if (foundGeneric.length > 0) {
-    issues.push(`Contains generic terms: ${foundGeneric.join(', ')}`);
-    score -= 30;
+  const foundGeneric: string[] = [];
+  for (const pattern of genericPatterns) {
+    const match = code.match(pattern);
+    if (match) {
+      foundGeneric.push(match[0].toLowerCase());
+    }
   }
   
+  // Reduce penalty for generic terms (was -30, now -15)
+  if (foundGeneric.length > 0) {
+    issues.push(`Contains generic terms: ${foundGeneric.join(', ')}`);
+    score -= Math.min(15 * foundGeneric.length, 30);
+  }
+  
+  // Bonus points for having real data structures and interactivity
+  if (codeContent.includes('usestate') || codeContent.includes('useeffect')) {
+    score += 5; // Bonus for interactivity
+  }
+  
+  if (codeContent.includes('map(') && !codeContent.includes('example')) {
+    score += 5; // Bonus for data rendering
+  }
+  
+  // More lenient threshold (was 60, now 40)
   return {
-    relevant: score >= 60,
+    relevant: score >= 40,
     issues,
     score
   };

@@ -7,9 +7,9 @@ const GeneratedComponent = () => {
   const [hoveredIndex, setHoveredIndex] = useState(null);
   
   const stats = [
-    {label:"Revenue",value:2.4,change:"+12%",trend:"up", detail: "↑ $280K from Q3", icon: "DollarSign"},
-    {label:"Active Users",value:18.2,change:"+8%",trend:"up", detail: "↑ 1.4K new this month", icon: "Users"},
-    {label:"Conversion",value:3.2,change:"+0.4%",trend:"up", detail: "↑ Best quarter yet", icon: "TrendingUp"}
+    {label:"Revenue",value:2.4,change:"+12%",trend:"up", detail: "$280K increase from last quarter", icon: "DollarSign"},
+    {label:"Users",value:18.2,change:"+8%",trend:"up", detail: "1.4K new signups this month", icon: "Users"},
+    {label:"Conversion",value:3.2,change:"+0.4%",trend:"up", detail: "Best performance yet", icon: "TrendingUp"}
   ];
   
   return (
@@ -19,12 +19,12 @@ const GeneratedComponent = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <Card className="bg-gradient-to-br from-muted/50 to-muted/30">
+      <Card className="overflow-hidden bg-gradient-to-br from-muted/50 to-muted/30">
         <CardHeader>
           <CardTitle>Q4 Metrics</CardTitle>
-          <CardDescription>October 2025 • Hover for insights</CardDescription>
+          <CardDescription>October 2025 · Hover to see details</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           {stats.map((s, i) => {
             const isHovered = hoveredIndex === i;
             const Icon = Icons[s.icon] || Icons.Activity;
@@ -42,7 +42,7 @@ const GeneratedComponent = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={cn(
-                      "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
+                      "w-10 h-10 rounded-lg flex items-center justify-center",
                       s.trend === "up" ? "bg-green-100 dark:bg-green-900" : "bg-red-100 dark:bg-red-900"
                     )}>
                       <Icon className={cn("h-5 w-5", s.trend === "up" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")} />
@@ -52,7 +52,7 @@ const GeneratedComponent = () => {
                       <p className="text-2xl font-bold">
                         <NumberFlow 
                           value={s.value} 
-                          suffix={s.label === "Revenue" ? "M" : s.label === "Active Users" ? "K" : "%"} 
+                          suffix={s.label === "Revenue" ? "M" : s.label === "Users" ? "K" : "%"} 
                           format={s.label === "Revenue" ? { style: 'currency', currency: 'USD' } : undefined}
                         />
                       </p>
@@ -72,7 +72,7 @@ const GeneratedComponent = () => {
                   transition={{ duration: 0.2 }}
                   className="overflow-hidden"
                 >
-                  <div className="pt-3 mt-3 border-t border-border">
+                  <div className="pt-3 mt-3 border-t">
                     <p className="text-sm text-muted-foreground">{s.detail}</p>
                   </div>
                 </motion.div>

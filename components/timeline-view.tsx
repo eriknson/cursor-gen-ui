@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ComponentConfig } from "@/lib/agent-wrapper";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import NumberFlow from "@number-flow/react";
 
 interface TimelineItem {
   title: string;
@@ -69,7 +70,7 @@ export const TimelineView = ({ data, config = {} }: TimelineViewProps) => {
 
   if (orientation === "horizontal") {
     return (
-      <div className="md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full pb-6">
+      <div className="w-full p-6">
         <div className="overflow-x-auto pb-2">
           <div className="flex gap-4 min-w-max">
             {data.map((item, index) => (
@@ -122,7 +123,7 @@ export const TimelineView = ({ data, config = {} }: TimelineViewProps) => {
 
   // Vertical orientation (default)
   return (
-    <div className="md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full pb-6">
+    <div className="w-full p-6">
       <div className="relative">
         {/* Vertical line */}
         <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-border" />
@@ -151,32 +152,30 @@ export const TimelineView = ({ data, config = {} }: TimelineViewProps) => {
 
               {/* Content */}
               <div className="flex-1 pb-2">
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-1">
-                      <div className="text-base font-semibold text-foreground">
-                        {item.title}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {item.status && (
-                          <Badge variant={getStatusBadgeVariant(item.status)}>
-                            {item.status}
-                          </Badge>
-                        )}
-                        {item.time && (
-                          <div className="text-xs text-muted-foreground ml-2 flex-shrink-0">
-                            {item.time}
-                          </div>
-                        )}
-                      </div>
+                <div className="p-4 rounded-lg border bg-card">
+                  <div className="flex items-start justify-between mb-1">
+                    <div className="text-base font-semibold text-foreground">
+                      {item.title}
                     </div>
-                    {(variant === "default" || variant === "detailed") && (
-                      <div className="text-sm text-muted-foreground mt-1">
-                        {item.description}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                    <div className="flex items-center gap-2">
+                      {item.status && (
+                        <Badge variant={getStatusBadgeVariant(item.status)}>
+                          {item.status}
+                        </Badge>
+                      )}
+                      {item.time && (
+                        <div className="text-xs text-muted-foreground ml-2 flex-shrink-0">
+                          {item.time}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {(variant === "default" || variant === "detailed") && (
+                    <div className="text-sm text-muted-foreground mt-1">
+                      {item.description}
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
           ))}

@@ -4,7 +4,7 @@
  */
 
 import React, { ReactNode } from 'react';
-import { sanitizeComponentCode, ValidationResult } from './validators';
+import { sanitizeComponentCode, ValidationResult } from '../validators';
 import * as templates from './component-templates';
 
 export interface GeneratedComponentResult {

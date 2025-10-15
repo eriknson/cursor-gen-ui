@@ -7,289 +7,22 @@ import { motion } from "framer-motion";
 import { MasonryIcon, VercelIcon, CubeIcon } from "@/components/icons";
 import Link from "next/link";
 import { ModelSelector } from "@/components/model-selector";
+import { DataModeToggle, type DataMode } from "@/components/data-mode-toggle";
 import { sendMessage } from "./actions";
-import { renderComponent } from "@/lib/component-renderer";
-import { AgentResponse } from "@/lib/agent-wrapper";
+import { renderWidgetResponse } from "@/lib/widget-renderer";
+import { WidgetResponse } from "@/lib/widget-schema";
 import { LoadingState } from "@/lib/loading-states";
 import { LoadingIndicator } from "@/components/loading-indicator";
+import { ProgressiveSkeleton } from "@/components/progressive-skeleton";
 
 interface MessageItem {
+  id: string;
   role: "user" | "assistant";
   content: string;
-  response?: AgentResponse;
-}
-
-// Helper to merge data deltas for progressive rendering
-function mergeDelta(current: any, delta: any): any {
-  if (!current) return delta;
-  
-  // Special handling for datasets array (for charts)
-  if (typeof current === 'object' && 'datasets' in current && 
-      typeof delta === 'object' && 'datasets' in delta) {
-    return {
-      ...current,
-      ...delta,
-      datasets: [...(current.datasets || []), ...(delta.datasets || [])]
-    };
-  }
-  
-  if (Array.isArray(current) && Array.isArray(delta)) {
-    return [...current, ...delta];
-  }
-  if (typeof current === 'object' && typeof delta === 'object') {
-    return { ...current, ...delta };
-  }
-  return delta;
-}
-
-// Animated dots component
-function AnimatedDots() {
-  const [dots, setDots] = useState(".");
-  
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDots((prev) => {
-        if (prev === ".") return "..";
-        if (prev === "..") return "...";
-        return ".";
-      });
-    }, 500);
-    
-    return () => clearInterval(interval);
-  }, []);
-  
-  return <span>{dots}</span>;
-}
-
-// Component skeleton for different component types
-function ComponentSkeleton({ componentType }: { componentType: string }) {
-  const baseClasses = "animate-pulse bg-muted rounded-lg";
-  
-  // Chart-based components - match actual chart dimensions
-  if (componentType.includes('chart') || componentType.includes('gauge')) {
-    return (
-      <div className="md:max-w-[500px] max-w-[calc(100dvw-80px)] w-full">
-        <div className="border rounded-lg overflow-hidden">
-          <div className="p-6">
-            <div className={`h-6 w-48 ${baseClasses} mb-4`} /> {/* Title */}
-            <div className={`h-64 w-full ${baseClasses}`} /> {/* Chart area */}
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // Weather card - match exact weather card structure
-  if (componentType === 'weather-card') {
-    return (
-      <div className="md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full">
-        <div className="border rounded-lg overflow-hidden">
-          <div className="p-6">
-            {/* Header with location and icon */}
-            <div className="flex items-start justify-between mb-4">
-              <div className="space-y-1">
-                <div className={`h-6 w-32 ${baseClasses}`} /> {/* Location */}
-                <div className={`h-4 w-24 ${baseClasses}`} /> {/* Condition */}
-              </div>
-              <div className={`h-12 w-12 ${baseClasses} rounded`} /> {/* Weather icon */}
-            </div>
-            
-            {/* Temperature */}
-            <div className={`h-16 w-32 ${baseClasses} mb-4`} />
-            
-            {/* Additional details */}
-            <div className="flex gap-6 pt-4 border-t border-border">
-              <div className="flex items-center gap-2">
-                <div className={`h-6 w-6 ${baseClasses} rounded`} />
-                <div className="space-y-1">
-                  <div className={`h-3 w-16 ${baseClasses}`} />
-                  <div className={`h-4 w-12 ${baseClasses}`} />
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className={`h-6 w-6 ${baseClasses} rounded`} />
-                <div className="space-y-1">
-                  <div className={`h-3 w-12 ${baseClasses}`} />
-                  <div className={`h-4 w-16 ${baseClasses}`} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // Stock ticker
-  if (componentType === 'stock-ticker') {
-    return (
-      <div className="md:max-w-[500px] max-w-[calc(100dvw-80px)] w-full">
-        <div className="border rounded-lg overflow-hidden">
-          <div className="p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className={`h-8 w-20 ${baseClasses}`} /> {/* Symbol */}
-              <div className={`h-8 w-24 ${baseClasses}`} /> {/* Price */}
-            </div>
-            <div className={`h-32 w-full ${baseClasses}`} /> {/* Chart */}
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // Recipe card
-  if (componentType === 'recipe-card') {
-    return (
-      <div className="md:max-w-[500px] max-w-[calc(100dvw-80px)] w-full">
-        <div className="border rounded-lg overflow-hidden">
-          <div className="p-6 space-y-4">
-            <div className={`h-8 w-64 ${baseClasses}`} /> {/* Title */}
-            <div className="flex gap-4">
-              <div className={`h-6 w-20 ${baseClasses}`} />
-              <div className={`h-6 w-20 ${baseClasses}`} />
-              <div className={`h-6 w-16 ${baseClasses}`} />
-            </div>
-            <div className={`h-40 w-full ${baseClasses}`} /> {/* Image */}
-            <div className="space-y-2">
-              <div className={`h-4 w-full ${baseClasses}`} />
-              <div className={`h-4 w-full ${baseClasses}`} />
-              <div className={`h-4 w-3/4 ${baseClasses}`} />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // Comparison table
-  if (componentType === 'comparison-table') {
-    return (
-      <div className="md:max-w-[500px] max-w-[calc(100dvw-80px)] w-full">
-        <div className="border rounded-lg overflow-hidden">
-          <div className="p-6 space-y-3">
-            <div className={`h-8 w-full ${baseClasses}`} /> {/* Header */}
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex gap-4">
-                <div className={`h-6 w-24 ${baseClasses}`} />
-                <div className={`h-6 flex-1 ${baseClasses}`} />
-                <div className={`h-6 flex-1 ${baseClasses}`} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // Timeline
-  if (componentType === 'timeline') {
-    return (
-      <div className="md:max-w-[500px] max-w-[calc(100dvw-80px)] w-full">
-        <div className="border rounded-lg overflow-hidden">
-          <div className="p-6 space-y-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex gap-4">
-                <div className={`h-10 w-10 rounded-full ${baseClasses}`} />
-                <div className="flex-1 space-y-2">
-                  <div className={`h-6 w-40 ${baseClasses}`} />
-                  <div className={`h-4 w-full ${baseClasses}`} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // Stat card - match grid layout
-  if (componentType === 'stat-card') {
-    return (
-      <div className="md:max-w-[500px] max-w-[calc(100dvw-80px)] w-full">
-        <div className="border rounded-lg overflow-hidden">
-          <div className="p-6">
-            <div className="grid grid-cols-2 gap-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className={`h-24 ${baseClasses}`} />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // List with icons
-  if (componentType === 'list-with-icons') {
-    return (
-      <div className="md:max-w-[500px] max-w-[calc(100dvw-80px)] w-full">
-        <div className="border rounded-lg overflow-hidden">
-          <div className="p-6 space-y-3">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex gap-3 items-center">
-                <div className={`h-6 w-6 rounded ${baseClasses}`} />
-                <div className={`h-6 flex-1 ${baseClasses}`} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // Profile card
-  if (componentType === 'profile-card') {
-    return (
-      <div className="md:max-w-[500px] max-w-[calc(100dvw-80px)] w-full">
-        <div className="border rounded-lg overflow-hidden">
-          <div className="p-6 space-y-4">
-            <div className="flex gap-4 items-center">
-              <div className={`h-20 w-20 rounded-full ${baseClasses}`} />
-              <div className="flex-1 space-y-2">
-                <div className={`h-6 w-40 ${baseClasses}`} />
-                <div className={`h-4 w-32 ${baseClasses}`} />
-              </div>
-            </div>
-            <div className={`h-24 w-full ${baseClasses}`} />
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // Media grid / images
-  if (componentType === 'media-grid' || componentType === 'images') {
-    return (
-      <div className="md:max-w-[500px] max-w-[calc(100dvw-80px)] w-full">
-        <div className="border rounded-lg overflow-hidden">
-          <div className="p-6">
-            <div className="grid grid-cols-2 gap-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className={`h-40 ${baseClasses}`} />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // Default card skeleton for other types
-  return (
-    <div className="md:max-w-[500px] max-w-[calc(100dvw-80px)] w-full">
-      <div className="border rounded-lg overflow-hidden">
-        <div className="p-6 space-y-4">
-          <div className={`h-6 w-48 ${baseClasses}`} />
-          <div className={`h-32 w-full ${baseClasses}`} />
-          <div className="space-y-2">
-            <div className={`h-4 w-full ${baseClasses}`} />
-            <div className={`h-4 w-full ${baseClasses}`} />
-            <div className={`h-4 w-3/4 ${baseClasses}`} />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  response?: WidgetResponse;
+  plan?: any; // PlanResult from agent
+  query?: string; // Original user query
+  dataMode?: 'web-search' | 'example-data';
 }
 
 export default function Home() {
@@ -297,22 +30,33 @@ export default function Home() {
   const [messages, setMessages] = useState<Array<MessageItem>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingState, setLoadingState] = useState<LoadingState | null>(null);
-  const [buildingResponse, setBuildingResponse] = useState<AgentResponse | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>('cheetah');
+  const [dataMode, setDataMode] = useState<DataMode>('web-search');
+  
+  // Progressive skeleton states
+  const [planInfo, setPlanInfo] = useState<any>(null);
+  const [dataInfo, setDataInfo] = useState<any>(null);
+  const [currentQuery, setCurrentQuery] = useState<string>("");
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
 
-  // Read model from URL parameter on mount
+  // Read model and dataMode from URL parameters on mount
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const modelParam = searchParams.get('model');
+    const dataModeParam = searchParams.get('dataMode');
+    
     if (modelParam) {
       setSelectedModel(modelParam);
     }
+    if (dataModeParam === 'web-search' || dataModeParam === 'example-data') {
+      setDataMode(dataModeParam);
+    }
   }, []);
+
 
   const suggestedActions = [
     {
@@ -342,11 +86,16 @@ export default function Home() {
 
     setIsLoading(true);
     setLoadingState({ phase: 'analyzing', message: 'Understanding your question', progress: 5, subtext: 'Analyzing intent and requirements' });
+    
+    // Reset skeleton states
+    setPlanInfo(null);
+    setDataInfo(null);
+    setCurrentQuery(userMessage);
 
     // Add user message
     setMessages((messages) => [
       ...messages,
-      { role: "user", content: userMessage },
+      { id: `user-${Date.now()}`, role: "user", content: userMessage },
     ]);
     setInput("");
 
@@ -357,7 +106,7 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message: userMessage, model: selectedModel }),
+        body: JSON.stringify({ message: userMessage, model: selectedModel, dataMode }),
       });
 
       if (!response.ok) {
@@ -372,7 +121,8 @@ export default function Home() {
       }
 
       // Read the stream
-      let finalResponse: AgentResponse | null = null;
+      let finalResponse: WidgetResponse | null = null;
+      let capturedPlan: any = null;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -389,25 +139,13 @@ export default function Home() {
               if (data.type === "progress") {
                 // Update loading state with progress, message, and subtext
                 setLoadingState(data);
-              } else if (data.type === "partial" && data.chunk) {
-                // Progressive rendering of component as it builds
-                setBuildingResponse((prev: AgentResponse | null) => {
-                  if (data.chunk.stage === "init") {
-                    return {
-                      componentType: data.chunk.componentType,
-                      config: {},
-                      data: null,
-                      textResponse: ""
-                    };
-                  }
-                  if (data.chunk.stage === "config" && prev) {
-                    return { ...prev, config: { ...prev.config, ...data.chunk.config } };
-                  }
-                  if (data.chunk.stage === "data" && prev) {
-                    return { ...prev, data: mergeDelta(prev.data, data.chunk.dataDelta) };
-                  }
-                  return prev;
-                });
+              } else if (data.type === "plan" && data.plan) {
+                // Receive plan information for progressive skeleton
+                setPlanInfo(data.plan);
+                capturedPlan = data.plan; // Capture for message storage
+              } else if (data.type === "data" && data.dataResult) {
+                // Receive data information for progressive skeleton
+                setDataInfo(data.dataResult);
               } else if (data.type === "complete" && data.response) {
                 // Store final response
                 finalResponse = data.response;
@@ -422,11 +160,19 @@ export default function Home() {
         }
       }
 
-      // Add final response to messages
+      // Add final response to messages with plan and query for live updates
       if (finalResponse) {
         setMessages((messages) => [
           ...messages,
-          { role: "assistant", content: "", response: finalResponse },
+          { 
+            id: `assistant-${Date.now()}`, 
+            role: "assistant", 
+            content: "", 
+            response: finalResponse,
+            plan: capturedPlan,
+            query: userMessage,
+            dataMode: dataMode
+          },
         ]);
       } else {
         throw new Error("No response received");
@@ -436,25 +182,27 @@ export default function Home() {
       setMessages((messages) => [
         ...messages,
         {
+          id: `assistant-error-${Date.now()}`,
           role: "assistant",
           content: "",
           response: {
-            componentType: "text",
-            data: null,
             textResponse: "Sorry, something went wrong. Please try again.",
+            error: true
           },
         },
       ]);
     } finally {
       setIsLoading(false);
       setLoadingState(null);
-      setBuildingResponse(null);
+      setPlanInfo(null);
+      setDataInfo(null);
     }
   };
 
   return (    
     <div className="flex flex-row justify-center pb-20 h-dvh bg-background">
-      <div className="flex flex-col justify-between">     
+      <div className="flex flex-col justify-between">
+        
         <div
           ref={messagesContainerRef}        
           className="flex flex-col gap-2 h-full w-dvw items-center overflow-y-scroll pt-16"
@@ -467,37 +215,56 @@ export default function Home() {
               messages[index + 1].role === "user";
             
             return (
-              <div 
-                key={index} 
+              <motion.div 
+                key={message.id} 
                 className={isEndOfGroup ? "mb-4" : ""}
               >
                 <Message
                   role={message.role}
                   content={
                     message.response
-                      ? renderComponent(message.response)
+                      ? renderWidgetResponse(message.response, message.plan, message.query, message.dataMode)
                       : message.content
                   }
                 />
-              </div>
+              </motion.div>
             );
           })}
-          {/* Show skeleton component while building */}
-          {isLoading && buildingResponse && (
-            <motion.div
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Message
-                role="assistant"
-                content={<ComponentSkeleton componentType={buildingResponse.componentType || "generic"} />}
-              />
-            </motion.div>
-          )}
-          {/* Show loading indicator */}
-          {isLoading && !buildingResponse && loadingState && (
-            <LoadingIndicator loadingState={loadingState} />
+          {/* Show loading indicator (cube + shimmer text) and skeleton while loading */}
+          {isLoading && loadingState && (
+            <>
+              {/* Original shimmer indicator at top */}
+              <LoadingIndicator loadingState={loadingState} />
+              
+              {/* Progressive skeleton below - only show during component creation phases */}
+              {(loadingState.phase === 'designing' || 
+                loadingState.phase === 'generating' || 
+                loadingState.phase === 'validating' || 
+                loadingState.phase === 'reviewing') && (
+                <motion.div
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex flex-row gap-2 px-4 md:px-0 w-full md:w-[500px] first-of-type:pt-20"
+                >
+                  {/* Icon spacer to match Message layout */}
+                  <div className="size-[24px] flex-shrink-0" />
+                  
+                  <div className="flex-1 min-w-0">
+                    <ProgressiveSkeleton
+                      stage={
+                        loadingState.phase === 'designing' ? 1 :
+                        planInfo && !dataInfo ? 2 :
+                        dataInfo ? 3 : 1
+                      }
+                      plan={planInfo}
+                      dataResult={dataInfo}
+                      userQuery={currentQuery}
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </>
           )}
           <div ref={messagesEndRef} />
         </div>
@@ -516,7 +283,7 @@ export default function Home() {
                 <button
                   onClick={() => handleSubmit(action.action)}
                   disabled={isLoading}
-                  className="w-full text-left border border-border text-foreground rounded-lg p-2 text-sm hover:bg-muted transition-colors flex flex-col disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full text-left bg-muted/20 hover:bg-muted/40 text-foreground rounded-lg p-2 text-sm transition-colors flex flex-col disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="font-medium">{action.title}</span>
                   <span className="text-muted-foreground">
@@ -549,7 +316,7 @@ export default function Home() {
             <input
               ref={inputRef}
               className="bg-transparent px-3 pt-3 pb-2 w-full outline-none text-foreground placeholder-muted-foreground disabled:opacity-50"
-              placeholder="Ask me anything"
+              placeholder="Ask, search, build anything"
               value={input}
               onChange={(event) => setInput(event.target.value)}
               onFocus={() => setIsFocused(true)}
@@ -557,12 +324,17 @@ export default function Home() {
               disabled={isLoading}
             />
             
-            {/* Model Selector and Agent Row */}
+            {/* Model Selector, Data Mode Toggle, and Submit Button Row */}
             <div className="flex items-center justify-between gap-2 px-3 pb-3">
-              <div onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                 <ModelSelector 
                   selectedModel={selectedModel}
                   onModelChange={setSelectedModel}
+                  disabled={isLoading}
+                />
+                <DataModeToggle
+                  dataMode={dataMode}
+                  onDataModeChange={setDataMode}
                   disabled={isLoading}
                 />
               </div>

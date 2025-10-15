@@ -1,8 +1,8 @@
 import { ReactNode } from "react";
 import { Markdown } from "@/components/markdown";
-import { AgentResponse } from "./agent-wrapper";
-import { ComponentErrorBoundary } from "@/components/component-error-boundary";
-import { validateAgentResponse, sanitizeComponentCode } from "./validators";
+import { AgentResponse } from "./agent-wrapper-legacy";
+import { ComponentErrorBoundary } from "./component-error-boundary";
+import { validateAgentResponse, sanitizeComponentCode } from "../validators";
 import { DynamicRenderer } from "./dynamic-renderer";
 
 // Import all components

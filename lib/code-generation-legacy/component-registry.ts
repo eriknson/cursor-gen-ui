@@ -49,16 +49,16 @@ Other: ${COMPONENT_SCOPE.other.join(', ')} (Icons from lucide-react, NumberFlow 
 }
 
 const EXAMPLE_MAP: Record<string, string> = {
-  metric: 'live-metric.md',
+  metric: 'simple-metric.md',  // Updated to use simplified version
   fact: 'expandable-detail.md',
-  list: 'hover-cards.md',
-  comparison: 'comparison-toggle.md',
+  list: 'simple-list.md',  // Updated to use simplified version
+  comparison: 'simple-comparison.md',  // Updated to use simplified version
   trend: 'metrics-dashboard.md',
   status: 'flight-status.md',
   timeline: 'animated-timeline.md',
   profile: 'person-bio.md',
   gallery: 'photo-grid.md',
-  calculator: 'calculator.md',  // Changed from tip-calculator to simple calculator with buttons
+  calculator: 'calculator.md',
   quote: 'testimonial.md',
   map: 'directions-steps.md'
 };

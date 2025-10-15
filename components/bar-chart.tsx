@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import {
   BarChart as RechartsBarChart,
   Bar,
@@ -9,7 +8,6 @@ import {
   CartesianGrid,
 } from "recharts";
 import { ComponentConfig } from "@/lib/agent-wrapper";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartContainer,
   ChartTooltip,
@@ -19,16 +17,16 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 
-// Monochrome color palette - using actual color values that work in both light and dark modes
-const MONOCHROME_COLORS = [
-  "#1E1E1E",  // Primary dark
-  "#6B6B6B",  // Secondary grey
-  "#A8A8A8",  // Light grey
-  "#8B8B8B",  // Medium grey
-  "#707070",  // Another grey
-  "#959595",  // Light medium grey
-  "#5A5A5A",  // Dark grey
-  "#ABABAB",  // Very light grey
+// Vibrant color palette for better visibility and distinction
+const CHART_COLORS = [
+  "hsl(220, 85%, 55%)",  // Bright blue
+  "hsl(25, 95%, 55%)",   // Bright orange
+  "hsl(140, 70%, 45%)",  // Green
+  "hsl(280, 70%, 60%)",  // Purple
+  "hsl(340, 85%, 55%)",  // Pink/Red
+  "hsl(45, 90%, 55%)",   // Yellow
+  "hsl(180, 70%, 45%)",  // Cyan
+  "hsl(15, 85%, 60%)",   // Coral
 ];
 
 interface DataPoint {
@@ -83,13 +81,32 @@ export const BarChart = ({ data, config = {} }: BarChartProps) => {
       return dataPoint;
     });
 
-    // Create chart config for shadcn
+    // Create chart config for shadcn with theme-aware colors
     chartConfig = multiData.datasets.reduce((acc, dataset, idx) => {
-      const color = dataset.color || config.colors?.[idx] || MONOCHROME_COLORS[idx % MONOCHROME_COLORS.length];
-      acc[dataset.name] = {
-        label: dataset.name,
-        color: color,
-      };
+      const providedColor = dataset.color || config.colors?.[idx];
+      
+      // Validate color - reject white, transparent, or invalid colors
+      const isValidColor = providedColor && 
+        providedColor !== '#fff' && 
+        providedColor !== '#ffffff' && 
+        providedColor !== 'white' &&
+        providedColor !== 'transparent' &&
+        providedColor !== 'none' &&
+        providedColor.trim() !== '';
+      
+      if (isValidColor) {
+        // Use provided color
+        acc[dataset.name] = {
+          label: dataset.name,
+          color: providedColor,
+        };
+      } else {
+        // Use vibrant color palette as fallback
+        acc[dataset.name] = {
+          label: dataset.name,
+          color: CHART_COLORS[idx % CHART_COLORS.length],
+        };
+      }
       return acc;
     }, {} as ChartConfig);
   } else {
@@ -104,52 +121,59 @@ export const BarChart = ({ data, config = {} }: BarChartProps) => {
       value: d.value,
     }));
 
-    const primaryColor = config.colors?.[0] || MONOCHROME_COLORS[0];
+    const primaryColor = config.colors?.[0];
 
     chartConfig = {
       value: {
         label: "Value",
-        color: primaryColor,
+        color: primaryColor || CHART_COLORS[0],
       },
     };
   }
 
   const showLegend = config.showLegend ?? (isMultiDataset && Object.keys(chartConfig).length > 1);
   const title = config.title || (isMultiDataset && chartData.length > 0 ? chartConfig[Object.keys(chartConfig)[0]]?.label : null);
+  const subtitle = config.subtitle;
   
-  // Temporary debug - check actual data
-  if (chartData.length > 0) {
-    console.log('=== BAR CHART DEBUG ===');
-    console.log('Raw data:', data);
-    console.log('Chart data:', chartData);
-    console.log('Chart config:', chartConfig);
-    console.log('Config keys:', Object.keys(chartConfig));
-    console.log('First data point:', chartData[0]);
+  // Calculate optimal bar size based on number of data points and datasets
+  const numDataPoints = chartData.length;
+  const numDatasets = Object.keys(chartConfig).length;
+  const isGrouped = grouping === "grouped";
+  
+  // Dynamic bar size calculation for better visual balance
+  let barSize: number | undefined;
+  if (variant === "vertical") {
+    if (numDataPoints <= 6) {
+      barSize = isGrouped ? 40 : 60;
+    } else if (numDataPoints <= 12) {
+      barSize = isGrouped ? 25 : 40;
+    } else {
+      barSize = isGrouped ? 15 : 25;
+    }
+  } else {
+    // Horizontal bars can be a bit smaller
+    barSize = 30;
   }
   
   return (
-    <motion.div
-      className="md:max-w-[452px] max-w-[calc(100dvw-80px)] w-full pb-6"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <Card>
-        {title && (
-          <CardHeader>
-            <CardTitle>{title}</CardTitle>
-          </CardHeader>
-        )}
-        <CardContent className={title ? "p-4" : "p-4 pt-6"}>
-          <div className="w-full h-[280px]">
+    <div className="w-full px-6 pt-6 pb-2 space-y-4">
+      {(title || subtitle) && (
+        <div className="space-y-1">
+          {title && <h3 className="text-base font-semibold tracking-tight">{title}</h3>}
+          {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+        </div>
+      )}
+      <div className="w-full h-[280px]">
             <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
               <RechartsBarChart 
                 data={chartData}
                 layout={variant === "horizontal" ? "horizontal" : "vertical"}
-                margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
-                barSize={60}
+                margin={{ top: 5, right: 10, left: -10, bottom: 5 }}
+                barSize={barSize}
+                barCategoryGap={isGrouped ? "15%" : "20%"}
+                barGap={isGrouped ? 4 : 0}
               >
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 80%)" strokeOpacity={0.5} />
                 {variant === "horizontal" ? (
                   <>
                     <XAxis 
@@ -158,6 +182,7 @@ export const BarChart = ({ data, config = {} }: BarChartProps) => {
                       axisLine={false}
                       tickMargin={8}
                       fontSize={12}
+                      stroke="hsl(0, 0%, 40%)"
                     />
                     <YAxis 
                       type="category"
@@ -166,6 +191,7 @@ export const BarChart = ({ data, config = {} }: BarChartProps) => {
                       axisLine={false}
                       tickMargin={8}
                       fontSize={12}
+                      stroke="hsl(0, 0%, 40%)"
                     />
                   </>
                 ) : (
@@ -177,6 +203,7 @@ export const BarChart = ({ data, config = {} }: BarChartProps) => {
                       axisLine={false}
                       tickMargin={8}
                       fontSize={12}
+                      stroke="hsl(0, 0%, 40%)"
                     />
                     <YAxis 
                       type="number"
@@ -184,18 +211,19 @@ export const BarChart = ({ data, config = {} }: BarChartProps) => {
                       axisLine={false}
                       tickMargin={8}
                       fontSize={12}
+                      stroke="hsl(0, 0%, 40%)"
                     />
                   </>
                 )}
                 <ChartTooltip content={<ChartTooltipContent />} />
                 {showLegend && <ChartLegend content={<ChartLegendContent />} />}
                 {Object.keys(chartConfig).map((key) => {
-                  const itemColor = chartConfig[key]?.color;
+                  // Use CSS variable for both color and theme properties
                   return (
                     <Bar
                       key={key}
                       dataKey={key}
-                      fill={itemColor || `var(--color-${key})`}
+                      fill={`var(--color-${key})`}
                       stackId={grouping === "stacked" ? "stack" : undefined}
                       radius={[4, 4, 0, 0]}
                     />
@@ -204,9 +232,7 @@ export const BarChart = ({ data, config = {} }: BarChartProps) => {
               </RechartsBarChart>
             </ChartContainer>
           </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+    </div>
   );
 };
 

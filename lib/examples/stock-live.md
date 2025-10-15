@@ -33,13 +33,13 @@ const GeneratedComponent = () => {
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           <Tabs value={view} onValueChange={setView} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="chart">Chart</TabsTrigger>
               <TabsTrigger value="stats">Stats</TabsTrigger>
             </TabsList>
-            <TabsContent value="chart" className="mt-3">
+            <TabsContent value="chart" className="mt-4">
               <div className="h-24">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={data}>
@@ -54,17 +54,17 @@ const GeneratedComponent = () => {
                 </ResponsiveContainer>
               </div>
             </TabsContent>
-            <TabsContent value="stats" className="mt-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="text-sm">
+            <TabsContent value="stats" className="mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
                   <p className="text-xs text-muted-foreground">Change</p>
-                  <p className={cn("font-medium", isPositive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")}>
+                  <p className={cn("text-xl font-bold", isPositive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")}>
                     <NumberFlow value={stats.change} format={{ signDisplay: 'always', minimumFractionDigits: 2, style: 'currency', currency: 'USD' }} />
                   </p>
                 </div>
-                <div className="text-sm">
+                <div>
                   <p className="text-xs text-muted-foreground">Percent</p>
-                  <p className={cn("font-medium", isPositive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")}>
+                  <p className={cn("text-xl font-bold", isPositive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")}>
                     <NumberFlow value={stats.percent} format={{ signDisplay: 'always', minimumFractionDigits: 2 }} suffix="%" />
                   </p>
                 </div>
